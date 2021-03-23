@@ -1,6 +1,7 @@
 import bpy, cspy
 from bpy.types import Operator
 
+
 class OPS_OPTION:    
     '''Register, Display in the info window and support the redo toolbar panel.'''
     REGISTER = 'REGISTER'
@@ -36,7 +37,7 @@ class OPS_OPTIONS:
     UNDO = { OPS_OPTION.UNDO }
     UNDO_REGISTER = { OPS_OPTION.UNDO, OPS_OPTION.REGISTER }
 
-class OPS_():
+class OPS_(Operator):
     bl_options = OPS_OPTIONS.UNDO_REGISTER
     bl_label = 'Label'
     bl_idname = 'ops.base_op'
@@ -82,7 +83,7 @@ class OPS_():
         return returning
     
 
-class OPS_MODAL(OPS_):
+class OPS_DIALOG(OPS_):
 
     def do_draw(self, context, scene, layout, obj):        
         layout = self.layout        
@@ -98,3 +99,66 @@ class OPS_MODAL(OPS_):
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
 
+
+class OPS_MODAL(OPS_):
+    def __init__(self):
+        pass
+
+    def __del__(self):
+        pass
+
+    def running_modal(self):
+        return {'RUNNING_MODAL'}
+        
+    def execute(self, context):
+        return self.finished()
+
+    def modal(self, context, event):
+        try:
+            if self.do_cancel(context, event):
+                return self.cancelled()
+        except Exception as inst:
+            print('{0}:  [do_cancel]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+            return self.cancelled()
+
+        try:
+            if self.do_continue(context, event):                
+                try: 
+                    self.do_iteration(context, event)
+                except Exception as inst:
+                    print('{0}:  [do_iteration]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+                    return self.cancelled()
+                
+                return self.running_modal()              
+        except Exception as inst:
+            print('{0}:  [do_continue]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+            return self.cancelled()
+            
+        try: 
+            self.do_end(context, event)
+        except Exception as inst:
+            print('{0}:  [do_end]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+            return self.cancelled()
+
+        return self.finished()
+
+    def invoke(self, context, event):
+        self.do_start(context, event)
+        context.window_manager.modal_handler_add(self)
+        return self.running_modal()
+    
+    def do_cancel(self, context, event):
+        c = False
+        return c
+
+    def do_continue(self, context, event):
+        return False
+
+    def do_iteration(self, context, event):
+        pass
+    
+    def do_start(self, context, event):
+        pass
+
+    def do_end(self, context, event):
+        pass

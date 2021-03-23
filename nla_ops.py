@@ -1,26 +1,10 @@
 import bpy, cspy
 from bpy.types import Operator
-from cspy.ops import OPS_OPTIONS, OPS_, OPS_MODAL
+from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.nla import *
 
-class NLA_OT_clamp_to_strips(Operator, OPS_):
-    """Clamps scene play region to selected strips"""
-    bl_idname = "nla.clamp_to_strips"
-    bl_label = "Clamp To Strips"
-    
-    @classmethod
-    def do_poll(cls, context):
-        return len(get_selected_strips()) > 0
-            
-    def do_execute(self, context):
-        obj = context.active_object
-        
-        clamp_to_strips(context)
-
-        return {'FINISHED'}
-
-class NLA_OT_actions_to_strip(Operator, OPS_):
+class NLA_OT_actions_to_strip(OPS_, Operator):
     """Cleans fcurves with the _NOROT or 'Action Bake' names"""
     bl_idname = "nla.actions_to_strip"
     bl_label = "Actions To Strip"
@@ -41,13 +25,13 @@ class NLA_OT_actions_to_strip(Operator, OPS_):
         for action in bpy.data.actions:
             if first and action == first:
                 continue
-            if action.name.endswith('_Layer'):
+            if action.name.endswith('_Layer') or  'PoseLib' in action.name:
                 continue
             track.strips.new(action.name, start, action)
             start += action.frame_range[1] + padding
         return {'FINISHED'}
 
-class NLA_OT_strips_from_text(Operator, OPS_):
+class NLA_OT_strips_from_text(OPS_, Operator):
     """Seperates actions onto the NLA using the specified text"""
     bl_idname = "nla.strips_from_text"
     bl_label = "Strips From Text"
@@ -119,7 +103,7 @@ class NLA_OT_strips_from_text(Operator, OPS_):
         scene.frame_end = start
         return {'FINISHED'}
 
-class NLA_OT_import_strips(Operator, OPS_):
+class NLA_OT_import_strips(OPS_, Operator):
     """Imports strips from FBX files"""
     bl_idname = "nla.import_strips"
     bl_label = "Import Strips From FBX"

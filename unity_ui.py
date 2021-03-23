@@ -194,7 +194,7 @@ class UNITY_UL_UnityClips(bpy.types.UIList):
             print(inst)
             raise        
         
-def draw_clip_buttons(layout, scene):
+def draw_clip_buttons(layout, scene, context):
     layout.prop(scene, 'unity_sheet_dir_path')
     row = layout.row(align=True)    
     row.operator(UNITY_OT_refresh_clip_data.bl_idname)
@@ -205,6 +205,11 @@ def draw_clip_buttons(layout, scene):
     row = layout.row(align=True)    
     row.operator(UNITY_OT_sort_clip_data.bl_idname)
     row.operator(UNITY_OT_sort_clip_data_all.bl_idname)
+    row = layout.row(align=True)    
+    row.prop(context.active_object.animation_data.action, 'unity_clip_template')
+    row.operator(UNITY_OT_copy_clips_from_template.bl_idname)
+    row = layout.row(align=True)    
+    row.operator(UNITY_OT_demarcate_clips.bl_idname)
 
 class VIEW_3D_PT_UI_Tool_Unity(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
     bl_label = "Unity"
@@ -216,7 +221,7 @@ class VIEW_3D_PT_UI_Tool_Unity(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
         return POLL.active_object_animation_data(context)
 
     def do_draw(self, context, scene, layout, obj):
-        draw_clip_buttons(layout, scene)
+        draw_clip_buttons(layout, scene, context)
         
         action = obj.animation_data.action
 
@@ -236,16 +241,24 @@ class DOPESHEET_EDITOR_PT_UI_Tool_Unity(bpy.types.Panel, PT_, UI.DOPESHEET_EDITO
         return POLL.active_object_animation_data(context)
 
     def do_draw(self, context, scene, layout, obj):
-        draw_clip_buttons(layout, scene)
+        draw_clip_buttons(layout, scene, context)
         
         action = obj.animation_data.action
+
+        if len(action.unity_clips) == 0:
+            return
+            
         layout.template_list("UNITY_UL_UnityClips", "", action, "unity_clips", action, "unity_index", rows=2,maxrows=4)
+
+        if action.unity_index < 0:
+            return
 
         unity_clip = action.unity_clips[action.unity_index]
         draw_clip(unity_clip, layout)
 
 def register():
     bpy.types.Scene.unity_sheet_dir_path = bpy.props.StringProperty(name="Sheet Dir Path", subtype='DIR_PATH') 
+    bpy.types.Action.unity_clip_template = bpy.props.PointerProperty(name="Unity Clip Template", type=bpy.types.Action) 
     bpy.types.Action.unity_clips = bpy.props.CollectionProperty(name="Unity Clips", type=UnityClipMetadata)
     bpy.types.Action.unity_index = bpy.props.IntProperty(name='Unity Index', default = 0, min=0)
     bpy.types.Action.unity_clips_protected = bpy.props.BoolProperty(name='Unity Clips Protected', default=False)
@@ -257,6 +270,7 @@ def register():
 
 def unregister():
     del bpy.types.Scene.unity_sheet_dir_path
+    del bpy.types.Action.unity_clip_template
     del bpy.types.Action.unity_clips
     del bpy.types.Action.unity_index
     del bpy.types.Action.unity_clips_protected

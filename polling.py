@@ -71,10 +71,10 @@ class POLL:
     @classmethod
     def active_ARMATURE_AND_BONES_AND_ANIMRET_SOURCE(cls, context):
         return (
-            POLL.active_ARMATURE(CONTEXT) and 
+            POLL.active_ARMATURE(context) and 
             len(context.active_object.data.bones) > 0 and 
             context.active_object.anim_ret.source != '' and
-            context.active_object.active_pose_bone
+            context.active_pose_bone
         )
 
     @classmethod

@@ -6,7 +6,7 @@ import re
 import time
 import math
 import cspy
-from cspy.ops import OPS_OPTIONS, OPS_, OPS_MODAL
+from cspy.ops import OPS_, OPS_DIALOG
 from cspy.ui import PT_OPTIONS, PT_, UI
 from bpy.types import Header, Menu, Panel
 from bpy.props import *

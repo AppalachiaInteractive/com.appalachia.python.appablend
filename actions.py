@@ -51,13 +51,6 @@ class KEYFRAME:
 
     ALL = [KEYFRAME, BREAKDOWN, MOVING_HOLD, EXTREME, JITTER]
 
-
-def clamp_to_action(context):
-    action = context.active_object.animation_data.action
-    context.scene.frame_start = action.frame_range[0]
-    context.scene.frame_end = action.frame_range[1]
-    context.scene.frame_current = context.scene.frame_start
-
 def insert_keyframe_extreme_by_path_and_index(action, data_path, array_index, frame, value, replace=False, needed=True, fast=False):
     return insert_keyframe_by_path_and_index(action, data_path, array_index, frame, value, replace, needed, fast, KEYFRAME.EXTREME)  
 

@@ -1,6 +1,6 @@
 import bpy, cspy
 from bpy.types import Operator
-from cspy.ops import OPS_OPTIONS, OPS_, OPS_MODAL
+from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.animation_retargeting import *
@@ -215,42 +215,42 @@ class AR_OPS_Create_New_Constraint(AR_OPS_):
     def initialize(self, context, new_anim_ret_constraint):
         pass
 
-class AR_Create_New_Constraint_COPY_LOCATION(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_COPY_LOCATION(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_copy_location"
     bl_label = "Create a new Copy Location bone constraint"
     constraint_type = Constants.COPY_LOCATION
 
-class AR_Create_New_Constraint_COPY_ROTATION(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_COPY_ROTATION(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_copy_rotation"
     bl_label = "Create a new COPY_ROTATION bone constraint"
     constraint_type = Constants.COPY_ROTATION
 
-class AR_Create_New_Constraint_COPY_SCALE(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_COPY_SCALE(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_copy_scale"
     bl_label = "Create a new COPY_SCALE bone constraint"
     constraint_type = Constants.COPY_SCALE
 
-class AR_Create_New_Constraint_LIMIT_DISTANCE(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_LIMIT_DISTANCE(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_limit_distance"
     bl_label = "Create a new LIMIT_DISTANCE bone constraint"
     constraint_type = Constants.LIMIT_DISTANCE
 
-class AR_Create_New_Constraint_LIMIT_LOCATION(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_LIMIT_LOCATION(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_limit_location"
     bl_label = "Create a new LIMIT_LOCATION bone constraint"
     constraint_type = Constants.LIMIT_LOCATION
 
-class AR_Create_New_Constraint_LIMIT_ROTATION(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_LIMIT_ROTATION(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_limit_rotation"
     bl_label = "Create a new LIMIT_ROTATION bone constraint"
     constraint_type = Constants.LIMIT_ROTATION
 
-class AR_Create_New_Constraint_LIMIT_SCALE(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_LIMIT_SCALE(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_limit_scale"
     bl_label = "Create a new LIMIT_SCALE bone constraint"
     constraint_type = Constants.LIMIT_SCALE
 
-class AR_Create_New_Constraint_TRANSFORM(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_TRANSFORM(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_transform"
     bl_label = "Create a new TRANSFORM bone constraint"
     constraint_type = Constants.TRANSFORM
@@ -300,37 +300,37 @@ class AR_Create_New_Constraint_TRANSFORM(Operator, OPS_, AR_OPS_Create_New_Const
         constraint.map_to = 'ROTATION'
         constraint.mix_mode_rot = 'REPLACE'
 
-class AR_Create_New_Constraint_DAMPED_TRACK(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_DAMPED_TRACK(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_damped_track"
     bl_label = "Create a new DAMPED_TRACK bone constraint"
     constraint_type = Constants.DAMPED_TRACK
 
-class AR_Create_New_Constraint_IK(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_IK(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_ik"
     bl_label = "Create a new IK bone constraint"
     constraint_type = Constants.IK
 
-class AR_Create_New_Constraint_STRETCH_TO(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_STRETCH_TO(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_stretch_to"
     bl_label = "Create a new STRETCH_TO bone constraint"
     constraint_type = Constants.STRETCH_TO
 
-class AR_Create_New_Constraint_CHILD_OF(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_CHILD_OF(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_child_of"
     bl_label = "Create a new CHILD_OF bone constraint"
     constraint_type = Constants.CHILD_OF
 
-class AR_Create_New_Constraint_PIVOT(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_PIVOT(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_pivot"
     bl_label = "Create a new PIVOT bone constraint"
     constraint_type = Constants.PIVOT
 
-class AR_Create_New_Constraint_SHRINKWRAP(Operator, OPS_, AR_OPS_Create_New_Constraint):
+class AR_Create_New_Constraint_SHRINKWRAP(AR_OPS_Create_New_Constraint, Operator):
     bl_idname = "ops.ar_create_new_constraint_shrinkwrap"
     bl_label = "Create a new SHRINKWRAP bone constraint"
     constraint_type = Constants.SHRINKWRAP
 
-class AR_Refresh_Constraints(Operator, OPS_, AR_OPS_):
+class AR_Refresh_Constraints(OPS_, AR_OPS_, Operator):
     bl_idname = 'ops.ar_refresh_constraints'
     bl_label = 'Refresh the bones constraints'
     
@@ -346,7 +346,7 @@ class AR_Refresh_Constraints(Operator, OPS_, AR_OPS_):
         self.report({'INFO'}, '[{0}] constraints refreshed.'.format(get_active_pose_bone(context).name))        
         return {'FINISHED'}
 
-class AR_Synchronize_Bones(Operator, OPS_, AR_OPS_):
+class AR_Synchronize_Bones(OPS_, AR_OPS_, Operator):
     bl_idname = 'ops.ar_synchronize_bones'
     bl_label = 'Synchronize the bones constraint names.'
     
@@ -362,7 +362,7 @@ class AR_Synchronize_Bones(Operator, OPS_, AR_OPS_):
         self.report({'INFO'}, 'Bones synchronized.')        
         return {'FINISHED'}
 
-class AR_Refresh_Bones(Operator, OPS_, AR_OPS_):
+class AR_Refresh_Bones(OPS_, AR_OPS_, Operator):
     bl_idname = 'ops.ar_refresh_bones'
     bl_label = 'Refresh all bone data.'
     
@@ -378,7 +378,7 @@ class AR_Refresh_Bones(Operator, OPS_, AR_OPS_):
         self.report({'INFO'}, 'Bones refreshed.')        
         return {'FINISHED'}
 
-class AR_Update_Cache(Operator, OPS_, AR_OPS_):
+class AR_Update_Cache(OPS_, AR_OPS_, Operator):
     """Updates the cache with the current bone and constraint data."""
     bl_idname = 'ops.ar_update_cache'
     bl_label = 'Update'
@@ -393,7 +393,7 @@ class AR_Update_Cache(Operator, OPS_, AR_OPS_):
         self.report({'INFO'}, cls.get_cache_status(context))
         return {'FINISHED'}
 
-class AR_Clear_Cache(Operator, OPS_, AR_OPS_):
+class AR_Clear_Cache(OPS_, AR_OPS_, Operator):
     """Clears the cache back to its original state."""
     bl_idname = 'ops.ar_clear_cache'
     bl_label = 'Clear'
@@ -408,7 +408,7 @@ class AR_Clear_Cache(Operator, OPS_, AR_OPS_):
         self.report({'INFO'}, cls.get_cache_status(context))
         return {'FINISHED'}
 
-class AR_Debug_Cache(Operator, OPS_, AR_OPS_):
+class AR_Debug_Cache(OPS_, AR_OPS_, Operator):
     """Shows debug data for a cache."""
     bl_idname = 'ops.ar_debug_cache'
     bl_label = 'Debug'
@@ -424,7 +424,7 @@ class AR_Debug_Cache(Operator, OPS_, AR_OPS_):
         self.report({'INFO'}, cls.get_cache_status(context))
         return {'FINISHED'}
 
-class AR_Restore_Cache(Operator, OPS_, AR_OPS_):
+class AR_Restore_Cache(OPS_, AR_OPS_, Operator):
     """Restores the cache by applying its bones and constraints to this armature."""
     bl_idname = 'ops.ar_restore_cache'
     bl_label = 'Restore'

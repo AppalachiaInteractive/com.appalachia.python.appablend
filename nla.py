@@ -30,17 +30,6 @@ def get_nla_track(obj):
             
     return tracks[0]
 
-def clamp_to_strips(context):
-    strips = get_selected_strips()
-
-    start = 10000
-    end = 0
-    for strip in strips:
-        start = min(start, strip.frame_start)
-        end = max(end, strip.frame_end)
-        
-    context.scene.frame_start = start
-    context.scene.frame_end = end
 
 def add_bind_pose_for_strip_population(context, track, padding = 5):
     start = 1

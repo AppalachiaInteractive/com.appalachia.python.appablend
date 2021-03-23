@@ -1,10 +1,10 @@
 import bpy, cspy
 from bpy.types import Operator
-from cspy.ops import OPS_OPTIONS, OPS_, OPS_MODAL
+from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.animation_metadata import *
 
-class AS_Split_Action_Via_Sheet(Operator, OPS_):
+class AS_Split_Action_Via_Sheet(OPS_, Operator):
     """Split the current action using the provided sheet"""
     bl_idname = "ops.aa_split_action_via_sheet"
     bl_label = "Split Via Sheet"

@@ -8,6 +8,47 @@ EDIT_MODE_CHECK = 'EDIT_ARMATURE'
 EDIT_MODE_SET = 'EDIT'
 POSE_MODE_SET = 'POSE'
 
+class PoseCorrection(bpy.types.PropertyGroup):
+    bone_name: bpy.props.StringProperty(name='Bone')
+    reference_point: bpy.props.FloatVectorProperty(name='Reference Point', subtype='TRANSLATION')
+    correction_handle_bone_name: bpy.props.StringProperty(name='Correction Bone')
+    influence: bpy.props.FloatProperty(name='Influence', default=1.0,min=0.0,max=1.0)
+
+    def get_location_by_bone(self, name):
+        arm =  self.id_data
+        bone = arm.pose.bones[name]        
+        loc, rot, sca = bone.matrix.decompose()
+        return loc
+
+    def get_location(self):
+        return self.get_location_by_bone(self.bone_name)
+
+    def get_correction(self):
+        return self.influence * (self.get_location() - self.reference_point)
+    
+    location: bpy.props.FloatVectorProperty(get=get_location, name='Location')
+    correction: bpy.props.FloatVectorProperty(get=get_correction, name='Correction')
+
+def pose_correction_invalid(arm, bone, pose_correction):
+    pose = arm.pose
+    disconnected_bones = {}
+    for b in arm.data.bones:
+        if not b.use_connect:
+            disconnected_bones[b.name] = pose.bones[b.name]
+
+    parent_bones = set()
+    parent_bone = bone
+    while parent_bone is not None:
+        parent_bones.add(parent_bone.name)
+        parent_bone = parent_bone.parent
+
+    hb = pose_correction.correction_handle_bone_name
+    if (hb != '' and 
+        (hb not in disconnected_bones or hb not in parent_bones)
+        ):            
+        return True
+    return False
+        
 def enter_edit_mode():
     return bpy.context.mode != EDIT_MODE_CHECK
 def exit_edit_mode(entered):

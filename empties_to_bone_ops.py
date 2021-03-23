@@ -1,6 +1,6 @@
 import bpy, cspy
 from bpy.types import Operator
-from cspy.ops import OPS_OPTIONS, OPS_, OPS_MODAL
+from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.empties_to_bone import *
 
@@ -164,7 +164,7 @@ class EB_OPS_BAKE():
     clear_empties: bpy.props.BoolProperty(default=True, description="Delete the empties chain")
     clear_armature: bpy.props.BoolProperty(default=True, description="Delete the armature")
 
-class EB_OT_duplicate_armature(Operator, OPS_, EB_OPS_):
+class EB_OT_duplicate_armature(OPS_, EB_OPS_, Operator):
     """Copy the base pose of the specified armature, and set the selected empties to bones"""
     bl_idname = "eb.duplicate_armature"
     bl_label = "duplicate_armature"
@@ -176,7 +176,7 @@ class EB_OT_duplicate_armature(Operator, OPS_, EB_OPS_):
     def do_execute(self, context):
         return self.execute_duplicate(context)
 
-class EB_OT_create_armature(Operator, OPS_, EB_OPS_):
+class EB_OT_create_armature(OPS_, EB_OPS_, Operator):
     """Convert the selected empties to bones"""
     bl_idname = "eb.create_armature"
     bl_label = "create_armature"
@@ -188,7 +188,7 @@ class EB_OT_create_armature(Operator, OPS_, EB_OPS_):
     def do_execute(self, context):
         return self.execute_create(context)
 
-class BE_OT_deconstruct_armature(Operator, OPS_, EB_OPS_):
+class BE_OT_deconstruct_armature(OPS_, EB_OPS_, Operator):
     """Convert the selected bones to empties"""
     bl_idname = "be.deconstruct_armature"
     bl_label = "deconstruct_armature"
@@ -200,7 +200,7 @@ class BE_OT_deconstruct_armature(Operator, OPS_, EB_OPS_):
     def do_execute(self, context):
         return self.execute_deconstruct(context)
 
-class EB_OT_bake_anim(Operator, OPS_MODAL, EB_OPS_, EB_OPS_BAKE):
+class EB_OT_bake_anim(EB_OPS_BAKE, EB_OPS_, OPS_DIALOG, Operator):
     """Bake bones animation"""
     bl_idname = "eb.bake_anim"
     bl_label = "Complete Armature"    
@@ -218,7 +218,7 @@ class EB_OT_bake_anim(Operator, OPS_MODAL, EB_OPS_, EB_OPS_BAKE):
     def do_execute(self, context):
         return self.execute_bake(context)
 
-class EB_OT_deconstruct_duplicate_bake(Operator, OPS_MODAL, EB_OPS_, EB_OPS_BAKE):
+class EB_OT_deconstruct_duplicate_bake(EB_OPS_BAKE, EB_OPS_, OPS_DIALOG, Operator):
     """Deconstruct the armature, create empties, duplicate armature, bake"""
     bl_idname = "eb.deconstruct_duplicate_bake"
     bl_label = "Deconstruct Duplicate Bake"    
@@ -238,7 +238,7 @@ class EB_OT_deconstruct_duplicate_bake(Operator, OPS_MODAL, EB_OPS_, EB_OPS_BAKE
         self.execute_duplicate(context)
         return self.execute_bake(context)
 
-class EB_OT_create_bake(Operator, OPS_MODAL, EB_OPS_, EB_OPS_BAKE):
+class EB_OT_create_bake(EB_OPS_BAKE, EB_OPS_, OPS_DIALOG, Operator):
     """Create the armature and bake the animations"""
     bl_idname = "eb.create_bake"
     bl_label = "Create Bake"    
@@ -257,7 +257,7 @@ class EB_OT_create_bake(Operator, OPS_MODAL, EB_OPS_, EB_OPS_BAKE):
         self.execute_create(context) 
         return self.execute_bake(context)
 
-class EB_OT_duplicate_bake(Operator, OPS_MODAL, EB_OPS_, EB_OPS_BAKE):
+class EB_OT_duplicate_bake(EB_OPS_BAKE, EB_OPS_, OPS_DIALOG, Operator):
     """Duplicate the armature and bake the animations"""
     bl_idname = "eb.duplicate_bake"
     bl_label = "Duplicate Bake"
@@ -276,7 +276,7 @@ class EB_OT_duplicate_bake(Operator, OPS_MODAL, EB_OPS_, EB_OPS_BAKE):
         self.execute_duplicate(context) 
         return self.execute_bake(context)
 
-class EB_OT_process_batch(Operator, OPS_, EB_OPS_, EB_OPS_BAKE):
+class EB_OT_process_batch(OPS_, EB_OPS_, EB_OPS_BAKE):
     """Batch processing"""
     bl_idname = 'eb.eb_ot_process_batch'
     bl_label = "Batch Processing"

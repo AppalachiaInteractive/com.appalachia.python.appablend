@@ -15,13 +15,10 @@ def draw_strip_unity_clips(layout, scene):
         
         for unity_clip in action.unity_clips:
             if unity_clip.clip_name == strip.name:
-                unity_clip.draw(layout)
+                cspy.unity_ui.draw_clip(unity_clip, layout)
 
 def draw_general_nla(layout, scene):
     col = layout.column(align=True, heading='NLA Strips')
-    col.operator(NLA_OT_clamp_to_strips.bl_idname)
-
-    col.separator(factor=2.0)
 
     col.operator(NLA_OT_actions_to_strip.bl_idname)
 
@@ -34,6 +31,7 @@ def draw_general_nla(layout, scene):
 class NLA_EDITOR_PT_UI_Tool_NLA(bpy.types.Panel, PT_, UI.NLA_EDITOR.UI.Tool):
     bl_label = "NLA"
     bl_idname = "NLA_EDITOR_PT_UI_Tool_NLA"
+    bl_icon = cspy.icons.NLA
 
     @classmethod
     def do_poll(cls, context):
@@ -48,3 +46,5 @@ class NLA_EDITOR_PT_UI_Tool_NLA(bpy.types.Panel, PT_, UI.NLA_EDITOR.UI.Tool):
         box.label(text='Unity Clips')
         draw_strip_unity_clips(box, scene)
 
+        box = layout.box()
+        box.operator('pose.transforms_clear')

@@ -1,10 +1,10 @@
 import bpy, cspy
 from bpy.types import Operator
-from cspy.ops import OPS_OPTIONS, OPS_, OPS_MODAL
+from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.armature import *
 
-class AM_Integrate_Empties(Operator, OPS_):
+class AM_Integrate_Empties(OPS_, Operator):
     """Integrates the empties above an armature into its bone chain."""
     bl_idname = 'ops.am_integrate_empties'
     bl_label = 'Integrate Empties'

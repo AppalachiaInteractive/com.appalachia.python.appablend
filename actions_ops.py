@@ -1,6 +1,6 @@
 import bpy, cspy
 from bpy.types import Operator
-from cspy.ops import OPS_OPTIONS, OPS_, OPS_MODAL
+from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.actions import *
 import math, mathutils
@@ -74,22 +74,6 @@ class ACT_Multiple_Action_Op:
     def finish(self, context):
         pass
    
-class ACT_OT_clamp_to_action(Operator, OPS_):
-    """Clamps scene play region to selected action"""
-    bl_idname = "nla.clamp_to_action"
-    bl_label = "Clamp To Action"
-    
-    @classmethod
-    def do_poll(cls, context):
-        return context.active_object and context.active_object.animation_data and context.active_object.animation_data.action
-            
-    def do_execute(self, context):
-        obj = context.active_object
-        
-        clamp_to_action(context)
-
-        return {'FINISHED'}
-
 class ACT_BAKE:
     def exec(self, context, action):
         obj = context.active_object
@@ -128,7 +112,7 @@ class ACT_BAKE:
                 print('[{1}]: Removed constraint {0}'.format(c, bone.name))
                 bone.constraints.remove(c)  
 
-class ACT_OT_bake_selected_to_action(Operator, OPS_, ACT_BAKE, ACT_Single_Action_Op):   
+class ACT_OT_bake_selected_to_action(ACT_BAKE, ACT_Single_Action_Op, OPS_, Operator):   
     """Bake selected bones to current action"""
     bl_idname = "nla.bake_selected_to_action"
     bl_label = "Bake Selected To Action"
@@ -137,7 +121,7 @@ class ACT_OT_bake_selected_to_action(Operator, OPS_, ACT_BAKE, ACT_Single_Action
     def do_poll(cls, context):
         return ACT_Single_Action_Op.do_poll(context) and POLL.active_ARMATURE_AND_BONES(context)
             
-class ACT_OT_bake_selected_to_action_all(Operator, OPS_, ACT_BAKE, ACT_Multiple_Action_Op):   
+class ACT_OT_bake_selected_to_action_all(OPS_, ACT_BAKE, ACT_Multiple_Action_Op):   
     """Bake selected bones to all actions"""
     bl_idname = "nla.bake_selected_to_action_all"
     bl_label = "Bake (All)"
@@ -146,7 +130,7 @@ class ACT_OT_bake_selected_to_action_all(Operator, OPS_, ACT_BAKE, ACT_Multiple_
     def do_poll(cls, context):
         return ACT_Multiple_Action_Op.do_poll(context) and POLL.active_ARMATURE_AND_BONES(context)
             
-class ACT_OT_sample_fcurves(Operator, OPS_, ACT_Single_Action_Op):
+class ACT_OT_sample_fcurves(ACT_Single_Action_Op, OPS_, Operator):
     """Sample all fcurve frames"""
     bl_idname = "nla.sample_fcurves"
     bl_label = "Sample FCurves"
@@ -157,7 +141,7 @@ class ACT_OT_sample_fcurves(Operator, OPS_, ACT_Single_Action_Op):
         cspy.actions.deselect_all_frames(action)
         return {'FINISHED'}
  
-class ACT_OT_sample_fcurves_all(Operator, OPS_, ACT_Multiple_Action_Op):
+class ACT_OT_sample_fcurves_all(ACT_Multiple_Action_Op, OPS_, Operator):
     """Sample all fcurve frames"""
     bl_idname = "act.sample_fcurves_all"
     bl_label = "Sample (All)"
@@ -168,7 +152,7 @@ class ACT_OT_sample_fcurves_all(Operator, OPS_, ACT_Multiple_Action_Op):
         cspy.actions.deselect_all_frames(action)       
         return {'FINISHED'}
  
-class ACT_OT_simplify_fcurves(Operator, OPS_, ACT_Single_Action_Op):
+class ACT_OT_simplify_fcurves(ACT_Single_Action_Op, OPS_, Operator):
     """Simplify all fcruves by removing those which are unnecessary"""
     bl_idname = "act.simplify_fcurves"
     bl_label = "Simplify FCurves"
@@ -176,7 +160,7 @@ class ACT_OT_simplify_fcurves(Operator, OPS_, ACT_Single_Action_Op):
     def exec(self, context, action):
         cspy.actions.simplify_fcurves(action)
  
-class ACT_OT_simplify_fcurves_all(Operator, OPS_, ACT_Multiple_Action_Op):
+class ACT_OT_simplify_fcurves_all(ACT_Multiple_Action_Op, OPS_, Operator):
     """Simplify all action fcurves by removing those which are unnecessary"""
     bl_idname = "act.simplify_fcurves_all"
     bl_label = "Simplify (All)"
@@ -184,7 +168,7 @@ class ACT_OT_simplify_fcurves_all(Operator, OPS_, ACT_Multiple_Action_Op):
     def exec(self, context, action):
         cspy.actions.simplify_fcurves(action)
 
-class ACT_OT_decorate_fcurves(Operator, OPS_, ACT_Single_Action_Op):
+class ACT_OT_decorate_fcurves(ACT_Single_Action_Op, OPS_, Operator):
     """Decorate all fcurves by ensuring metadata and keyframe types are correct"""
     bl_idname = "act.decorate_fcurves"
     bl_label = "Decorate FCurves"
@@ -192,7 +176,7 @@ class ACT_OT_decorate_fcurves(Operator, OPS_, ACT_Single_Action_Op):
     def exec(self, context, action):
         cspy.actions.decorate_curves(action)
 
-class ACT_OT_decorate_fcurves_all(Operator, OPS_, ACT_Multiple_Action_Op):
+class ACT_OT_decorate_fcurves_all(ACT_Multiple_Action_Op, OPS_, Operator):
     """Decorate all action fcurves by ensuring metadata and keyframe types are correct"""
     bl_idname = "act.decorate_fcurves_all"
     bl_label = "Decorate (All)"
@@ -200,7 +184,7 @@ class ACT_OT_decorate_fcurves_all(Operator, OPS_, ACT_Multiple_Action_Op):
     def exec(self, context, action):
         cspy.actions.decorate_curves(action)
 
-class ACT_OT_clean_fcurves(Operator, OPS_, ACT_Single_Action_Op):
+class ACT_OT_clean_fcurves(ACT_Single_Action_Op, OPS_, Operator):
     """Cleans fcurves with the _NOROT or 'Action Bake' names"""
     bl_idname = "act.clean_fcurves"
     bl_label = "Clean FCurves"
@@ -209,7 +193,7 @@ class ACT_OT_clean_fcurves(Operator, OPS_, ACT_Single_Action_Op):
         cspy.actions.clean_fcurves(action)
         return {'FINISHED'}
 
-class ACT_OT_clean_fcurves_all(Operator, OPS_, ACT_Multiple_Action_Op):
+class ACT_OT_clean_fcurves_all(ACT_Multiple_Action_Op, OPS_, Operator):
     """Cleans fcurves with the _NOROT or 'Action Bake' names"""
     bl_idname = "act.clean_fcurves_all"
     bl_label = "Clean (All)"
@@ -218,7 +202,7 @@ class ACT_OT_clean_fcurves_all(Operator, OPS_, ACT_Multiple_Action_Op):
         cspy.actions.clean_fcurves(action)
         return {'FINISHED'}
 
-class ACT_OT_combine_all_actions(Operator, OPS_):
+class ACT_OT_combine_all_actions(OPS_, Operator):
     """Combines all actions and updates relevant strip metadata"""
     bl_idname = "act.combine_all_actions"
     bl_label = "Combine All Actions"
@@ -252,7 +236,7 @@ class ACT_OT_combine_all_actions(Operator, OPS_):
         master_curves = master_action.fcurves
 
         for action in bpy.data.actions:            
-            if action == master_action or action.name.endswith('_Layer'):
+            if action == master_action or action.name.endswith('_Layer') or 'PoseLib' in action.name:
                 continue
             
             start = master_action.frame_range[1]
@@ -313,7 +297,7 @@ class ACT_OT_combine_all_actions(Operator, OPS_):
 
         return {'FINISHED'}
 
-class ACT_OT_Action_Euler_To_Quaternion(Operator, OPS_):
+class ACT_OT_Action_Euler_To_Quaternion(OPS_, Operator):
     """Converts actions from euler to quaternions."""
     bl_idname = 'ops.act_ot_action_euler_to_quaternion'
     bl_label = 'Convert Eulers To Quaternions'
@@ -334,7 +318,7 @@ class ACT_OT_Action_Euler_To_Quaternion(Operator, OPS_):
 
         return {'FINISHED'}
 
-class ACT_OT_Group_Actions_By_Bone(Operator, OPS_):
+class ACT_OT_Group_Actions_By_Bone(OPS_, Operator):
     """Groups all action fcurves by the bones they affect."""
     bl_idname = 'ops.act_ot_group_actions_by_bone'
     bl_label = 'Group Actions By Bone'
@@ -351,7 +335,7 @@ class ACT_OT_Group_Actions_By_Bone(Operator, OPS_):
         self.report({'INFO'}, 'Grouped actions by bone!')
         return {'FINISHED'}
 
-class ACT_OT_interpolation_mode(Operator, OPS_, ACT_Single_Action_Op):
+class ACT_OT_interpolation_mode(ACT_Single_Action_Op, OPS_, Operator):
     """Changes the interpolation mode for the active action (all keyframes)"""
     bl_idname = "act.interpolation_mode"
     bl_label = "Interpolation Mode"
@@ -362,7 +346,7 @@ class ACT_OT_interpolation_mode(Operator, OPS_, ACT_Single_Action_Op):
         change_interpolation(action, self.interpolation)
         return {'FINISHED'}
 
-class ACT_OT_interpolation_mode_all(Operator, OPS_, ACT_Multiple_Action_Op):
+class ACT_OT_interpolation_mode_all(ACT_Multiple_Action_Op, OPS_, Operator):
     """Changes the interpolation mode for the all actions (all keyframes)"""
     bl_idname = "act.interpolation_mode_all"
     bl_label = "Interpolation Mode (All)"
@@ -373,7 +357,7 @@ class ACT_OT_interpolation_mode_all(Operator, OPS_, ACT_Multiple_Action_Op):
         change_interpolation(action, self.interpolation)
         return {'FINISHED'}
 
-class ACT_OT_keyframe_type(Operator, OPS_, ACT_Single_Action_Op):
+class ACT_OT_keyframe_type(ACT_Single_Action_Op, OPS_, Operator):
     """Changes the keyframe mode for the active action (all keyframes)"""
     bl_idname = "act.keyframe_type"
     bl_label = "Keyframe Mode"
@@ -384,7 +368,7 @@ class ACT_OT_keyframe_type(Operator, OPS_, ACT_Single_Action_Op):
         change_keyframe_type(action, self.keyframe_type)
         return {'FINISHED'}
 
-class ACT_OT_keyframe_type_all(Operator, OPS_, ACT_Multiple_Action_Op):
+class ACT_OT_keyframe_type_all(ACT_Multiple_Action_Op, OPS_, Operator):
     """Changes the keyframe mode for the all actions (all keyframes)"""
     bl_idname = "act.keyframe_type_all"
     bl_label = "Keyframe Mode (All)"

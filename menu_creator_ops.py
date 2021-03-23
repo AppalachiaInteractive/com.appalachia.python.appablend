@@ -1,11 +1,11 @@
 import bpy, cspy
 from bpy.types import Operator
-from cspy.ops import OPS_OPTIONS, OPS_, OPS_MODAL
+from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.menu_creator import *
 
 
-class MC_AddProperty(Operator, OPS_):
+class MC_AddProperty(OPS_, Operator):
     """Add the property to the menu"""
     bl_idname = "object.add_property"
     bl_label = "Add property to Menu"
@@ -68,7 +68,7 @@ class MC_AddProperty(Operator, OPS_):
 
         return {'FINISHED'}
 
-class MC_AddCollection(Operator, OPS_):
+class MC_AddCollection(OPS_, Operator):
     """Add the collection to the selected section"""
     bl_idname = "object.add_collection"
     bl_label = "Add collection to Menu"
@@ -112,7 +112,7 @@ class WM_MT_button_context(bpy.types.Menu):
         pass
 
 # Operator to clean all properties and sections from all objects
-class MC_CleanAll(Operator, OPS_):
+class MC_CleanAll(OPS_, Operator):
     """Clean all the menus.\nIf you choose reset, it will also delete all Menu options from all objects"""
     bl_idname = "ops.mc_cleanprop"
     bl_label = "Clean all the properties"
@@ -133,7 +133,7 @@ class MC_CleanAll(Operator, OPS_):
         return {'FINISHED'}
 
 # Operator to clean all properties and sections from an objects. If reset is on, it will also disable the menu for that object
-class MC_CleanObject(Operator, OPS_):
+class MC_CleanObject(OPS_, Operator):
     """Clean all the object properties.\nIf you choose reset, it will also delete all Menu options from the object"""
     bl_idname = "ops.mc_cleanpropobj"
     bl_label = "Clean the object"
@@ -158,7 +158,7 @@ class MC_CleanObject(Operator, OPS_):
         return {'FINISHED'}
     
 # Operator to clean all properties and sections from an objects. If reset is on, it will also disable the menu for that object
-class MC_ReplacePath(Operator, OPS_):
+class MC_ReplacePath(OPS_, Operator):
     """Replace the object property paths."""
     bl_idname = "ops.mc_replacepath"
     bl_label = "Replace the objects path"
@@ -185,7 +185,7 @@ class MC_ReplacePath(Operator, OPS_):
         return {'FINISHED'}
     
 # Single Property settings
-class MC_PropertySettings(Operator, OPS_):
+class MC_PropertySettings(OPS_, Operator):
     """Modify some of the property settings"""
     bl_idname = "ops.mc_propsettings"
     bl_label = "Property settings"
@@ -247,7 +247,7 @@ class MC_PropertySettings(Operator, OPS_):
             box.label(text=self.path+'.'+self.id)
 
 # Swap Properties Operator
-class MC_SwapProperty(Operator, OPS_):
+class MC_SwapProperty(OPS_, Operator):
     """Change the position of the property"""
     bl_idname = "ops.mc_swapprops"
     bl_label = "Change the property position"
@@ -324,7 +324,7 @@ class MC_SwapProperty(Operator, OPS_):
         return {'FINISHED'}
 
 # Operator to remove a property (button in UI)
-class MC_RemoveProperty(Operator, OPS_):
+class MC_RemoveProperty(OPS_, Operator):
     """Remove the property from the current menu"""
     bl_idname = "ops.mc_removeproperty"
     bl_label = "Remove the property"
@@ -350,7 +350,7 @@ class MC_RemoveProperty(Operator, OPS_):
         return {'FINISHED'}
 
 # Operator to add a new section
-class MC_AddSection(Operator, OPS_):
+class MC_AddSection(OPS_, Operator):
     """Add a new section to the section list."""
     bl_idname = "ops.mc_addsection"
     bl_label = "Add section"
@@ -419,7 +419,7 @@ class MC_AddSection(Operator, OPS_):
         layout.prop(self, "type")
 
 # Section Property settings
-class MC_SectionSettings(Operator, OPS_):
+class MC_SectionSettings(OPS_, Operator):
     """Modify the section settings."""
     bl_idname = "ops.mc_sectionsettings"
     bl_label = "Section settings"
@@ -539,7 +539,7 @@ class MC_SectionSettings(Operator, OPS_):
             row.prop(self,"outfit_enable")
 
 # Operator to change Section position
-class MC_SwapSection(Operator, OPS_):
+class MC_SwapSection(OPS_, Operator):
     """Change the position of the section"""
     bl_idname = "ops.mc_swapsections"
     bl_label = "Change the section position"
@@ -592,7 +592,7 @@ class MC_SwapSection(Operator, OPS_):
         return {'FINISHED'}
 
 # Delete Section
-class MC_DeleteSection(Operator, OPS_):
+class MC_DeleteSection(OPS_, Operator):
     """Delete Section"""
     bl_idname = "ops.mc_deletesection"
     bl_label = "Section settings"
@@ -630,7 +630,7 @@ class MC_DeleteSection(Operator, OPS_):
         return {'FINISHED'}
 
 # Operator to shiwtch visibility of an object
-class MC_CollectionObjectVisibility(Operator, OPS_):
+class MC_CollectionObjectVisibility(OPS_, Operator):
     """Chenge the visibility of the selected object"""
     bl_idname = "ops.mc_colobjvisibility"
     bl_label = "Hide/Unhide Object visibility"
@@ -660,7 +660,7 @@ class MC_CollectionObjectVisibility(Operator, OPS_):
         return {'FINISHED'}
 
 # Initial Configuration Operator
-class MC_InitialConfiguration(Operator, OPS_):
+class MC_InitialConfiguration(OPS_, Operator):
     """Clean all the object properties"""
     bl_idname = "ops.mc_initialconfig"
     bl_label = "Clean all the properties"

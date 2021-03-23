@@ -1,7 +1,7 @@
 
 import bpy
 import cspy
-from cspy.ops import OPS_OPTIONS, OPS_, OPS_MODAL
+from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.actions import *  
@@ -54,10 +54,6 @@ def draw_baking(layout, scene):
     row.operator(ACT_OT_bake_selected_to_action.bl_idname)
     row.operator(ACT_OT_bake_selected_to_action_all.bl_idname)
 
-def draw_general_action(layout, scene):
-    col = layout.column(align=True, heading='Actions')
-    col.operator(ACT_OT_clamp_to_action.bl_idname)
-
 class VIEW_3D_PT_UI_Tool_Actions(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
     bl_label = "Actions"
     bl_idname = "VIEW_3D_PT_UI_Tool_Actions"
@@ -91,8 +87,6 @@ class DOPESHEET_EDITOR_PT_UI_Tool_Actions(bpy.types.Panel, PT_, UI.DOPESHEET_EDI
         return True
 
     def do_draw(self, context, scene, layout, obj):
-        box = layout.box()
-        draw_general_action(box, scene)
 
         box = layout.box()
         box.label(text='Globals')
@@ -113,11 +107,19 @@ class DOPESHEET_EDITOR_PT_UI_Tool_Interpolation(bpy.types.Panel, PT_, UI.DOPESHE
 
     def do_draw(self, context, scene, layout, obj):
         box = layout.box()
-        box.label(text='Interpolation')
         draw_interpolation(box, scene)
 
+class DOPESHEET_EDITOR_PT_UI_Tool_Interpolation_All(bpy.types.Panel, PT_, UI.DOPESHEET_EDITOR.UI):
+    bl_label = "Interpolation (All)"
+    bl_idname = "DOPESHEET_EDITOR_PT_UI_Tool_Interpolation_All"
+    bl_icon = cspy.icons.IPO_EXPO
+
+    @classmethod
+    def do_poll(cls, context):
+        return True
+
+    def do_draw(self, context, scene, layout, obj):
         box = layout.box()
-        box.label(text='Interpolation (All)')
         draw_interpolation_all(box, scene)
 
 class DOPESHEET_EDITOR_PT_UI_Tool_Keyframe(bpy.types.Panel, PT_, UI.DOPESHEET_EDITOR.UI):
@@ -131,11 +133,19 @@ class DOPESHEET_EDITOR_PT_UI_Tool_Keyframe(bpy.types.Panel, PT_, UI.DOPESHEET_ED
 
     def do_draw(self, context, scene, layout, obj):
         box = layout.box()
-        box.label(text='Keyframe')
         draw_keyframe(box, scene)
 
+class DOPESHEET_EDITOR_PT_UI_Tool_Keyframe_All(bpy.types.Panel, PT_, UI.DOPESHEET_EDITOR.UI):
+    bl_label = "Keyframe (All)"
+    bl_idname = "DOPESHEET_EDITOR_PT_UI_Tool_Keyframe_All"
+    bl_icon = cspy.icons.KEYTYPE_EXTREME_VEC
+
+    @classmethod
+    def do_poll(cls, context):
+        return True
+
+    def do_draw(self, context, scene, layout, obj):
         box = layout.box()
-        box.label(text='Keyframe (All)')
         draw_keyframe_all(box, scene)
 
 def register():  
