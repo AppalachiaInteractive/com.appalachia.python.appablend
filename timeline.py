@@ -19,11 +19,11 @@ def ff_timeline(context):
 
 def clamp_timeline_start_to_current(context):
     context.scene.frame_start = context.scene.frame_current
-    
+
 def clamp_timeline_end_to_current(context):
     context.scene.frame_end = context.scene.frame_current
 
-def clamp_timeline_to_range(context, frame_start, frame_end, play=False):        
+def clamp_timeline_to_range(context, frame_start, frame_end, play=False):
     context.scene.frame_current = frame_start
     context.scene.frame_start = frame_start
     context.scene.frame_end = frame_end
@@ -45,7 +45,7 @@ def clamp_to_strips(context, play=False):
     for strip in strips:
         start = min(start, strip.frame_start)
         end = max(end, strip.frame_end)
-        
+
     action = context.active_object.animation_data.action
     clamp_timeline_to_range(context, start, end, play)
 
@@ -73,7 +73,7 @@ def get_notable_frames(action):
         limit = max_keys_per_frame * .2
         if frame_key_count > 5:
             notable_frames.append(i)
-            
+
     return notable_frames
 
 def get_next_notable_frame(context, action, from_frame):

@@ -16,15 +16,15 @@ class VIEW_3D_PT_UI_Tool_Armature(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
         return POLL.active_ARMATURE(context)
 
     def do_draw(self, context, scene, layout, obj):
-        
+
         cspy.ui.layout_euler(layout, obj)
 
         col = layout.column()
         armature_mod = context.active_object.armature_mod
         col.prop(armature_mod, 'root_motion_mute', toggle=True)
         col.operator(AM_Integrate_Empties.bl_idname)
- 
-def register():  
+
+def register():
     bpy.types.Object.armature_mod = bpy.props.PointerProperty(type=ArmatureModification)
 
 def unregister():

@@ -4,7 +4,7 @@ import cspy
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.polling import POLL
 from cspy.nla import *
-from cspy.nla_ops import * 
+from cspy.nla_ops import *
 
 def draw_strip_unity_clips(layout, scene):
     strips = get_selected_strips()
@@ -12,7 +12,7 @@ def draw_strip_unity_clips(layout, scene):
         action = strip.action
         if not action:
             continue
-        
+
         for unity_clip in action.unity_clips:
             if unity_clip.clip_name == strip.name:
                 cspy.unity_ui.draw_clip(unity_clip, layout)

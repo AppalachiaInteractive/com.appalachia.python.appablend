@@ -3,6 +3,7 @@ from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.polling import POLL
 from cspy.empties_to_bone import *
 from cspy.empties_to_bone_ops import *
+from cspy import subtypes
 
 class EB_PT_menu(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
     bl_label = "Empties to Bones"
@@ -19,7 +20,7 @@ class EB_PT_menu(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
 
         box = layout.box()
         col = box.column(align=True)
-        col.label(text="Armature Options:")        
+        col.label(text="Armature Options:")
         row = col.row()
         row.prop(scene, 'eb_target_armature')
         row = col.row()
@@ -40,7 +41,7 @@ class EB_PT_menu(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
         row.prop(scene, "eb_invert_z", text="Invert Z")
         if scene.eb_auto_bones_orientation:
             row.enabled = False
-            
+
         box = layout.box()
         col = box.column(align=True)
         col.label(text="Target Options:")
@@ -85,8 +86,8 @@ def register():
     bpy.types.Scene.eb_target_type = bpy.props.EnumProperty(name='Target Type', items=TARGETS_ENUM, default=TARGETS_ENUM_DEF)
     bpy.types.Scene.eb_target_action = bpy.props.PointerProperty(type=bpy.types.Action, name="Target Action")
     bpy.types.Scene.eb_target_action_name = bpy.props.StringProperty(default='', name="Target Action Name")
-    bpy.types.Scene.eb_target_file = bpy.props.StringProperty(default='', name="Target Action Name", subtype='FILE_PATH')  
-    bpy.types.Scene.eb_target_dir = bpy.props.StringProperty(name="Sheet Dir Path", subtype='DIR_PATH')
+    bpy.types.Scene.eb_target_file = bpy.props.StringProperty(default='', name="Target Action Name", subtype=subtypes.StringProperty.Subtypes.FILE_PATH)
+    bpy.types.Scene.eb_target_dir = bpy.props.StringProperty(name="Sheet Dir Path", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
 
 def unregister():
     del bpy.types.Scene.eb_auto_bones_orientation

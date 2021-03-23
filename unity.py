@@ -4,8 +4,8 @@ from mathutils import Vector, Euler, Matrix
 import cspy
 from cspy import utils
 
-class UnityClipMetadata(bpy.types.PropertyGroup):    
-    
+class UnityClipMetadata(bpy.types.PropertyGroup):
+
     action: bpy.props.PointerProperty(name='Action', type=bpy.types.Action)
     fbx_name: bpy.props.StringProperty(name='FBX Name')
     name: bpy.props.StringProperty(name='Clip Name')
@@ -59,7 +59,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
     @classmethod
     def process_row(cls, row, key_offset, action):
         obj_name,clip_name,start_frame,stop_frame,loop_time,rot_bake_into,rot_keep_orig,rot_offset,y_bake_into,y_keep_orig ,y_offset,xz_bake_into,xz_keep_orig = UnityClipMetadata.parse_row(row, key_offset)
-        
+
         if action is None:
             if obj_name not in bpy.data.actions:
                 print('Could not find action for [{0}]'.format(obj_name))
@@ -69,7 +69,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
         else:
             if obj_name != action.name:
                 return None
-        
+
         metadata = action.unity_clips.get(clip_name)
 
         if not metadata:
@@ -77,26 +77,26 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
 
         metadata.action = action
         metadata.fbx_name = obj_name
-        metadata.name = clip_name 
+        metadata.name = clip_name
         metadata.start_frame = start_frame
         metadata.stop_frame = stop_frame
-        metadata.loop_time = loop_time 
-        metadata.rot_bake_into = rot_bake_into 
-        metadata.rot_keep_orig = rot_keep_orig 
-        metadata.rot_offset = rot_offset 
-        metadata.y_bake_into = y_bake_into 
-        metadata.y_keep_orig = y_keep_orig 
-        metadata.y_offset = y_offset 
-        metadata.xz_bake_into = xz_bake_into 
+        metadata.loop_time = loop_time
+        metadata.rot_bake_into = rot_bake_into
+        metadata.rot_keep_orig = rot_keep_orig
+        metadata.rot_offset = rot_offset
+        metadata.y_bake_into = y_bake_into
+        metadata.y_keep_orig = y_keep_orig
+        metadata.y_offset = y_offset
+        metadata.xz_bake_into = xz_bake_into
         metadata.xz_keep_orig = xz_keep_orig
         return metadata
 
     @classmethod
     def parse_files(cls, context, dir_path, key_offset, action=None):
         filepaths = cspy.files.get_files_in_dir(dir_path, '','','.txt')
-        
+
         headers, rows = cspy.files.parse_csvs(filepaths)
-        
+
         metadatas = []
 
         if action:
@@ -107,7 +107,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
 
             if metadata:
                 metadatas.append(metadata)
-        
+
         return metadatas
 
     def decorate(self, action):
@@ -122,19 +122,15 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
             start_marker = action.pose_markers.new(start_marker_name)
         if not stop_marker:
             stop_marker = action.pose_markers.new(start_marker_name)
-        
+
         for marker in action.pose_markers:
             if marker == start_marker:
                 marker.frame = self.start_frame
             elif marker == stop_marker:
                 marker.frame = self.stop_frame
 
-        for fc in action.fcurves:            
-            startval = fc.evaluate(self.start_frame)
-            endval = fc.evaluate(self.stop_frame)
-
-            cspy.actions.insert_keyframe(fc, self.start_frame, startval, needed=False, fast=True, keyframe_type=cspy.actions.KEYFRAME.EXTREME)
-            cspy.actions.insert_keyframe(fc, self.stop_frame, endval, needed=False, fast=True, keyframe_type=cspy.actions.KEYFRAME.EXTREME)
+        for fc in action.fcurves:
+            self.demarcate(fc)
 
             for index, kvp in enumerate(fc.keyframe_points):
                 f = kvp.co[0]
@@ -142,5 +138,12 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
 
                 if f == self.start_frame or f == self.stop_frame:
                     kvp.type = cspy.actions.KEYFRAME.EXTREME
-          
-   
+
+    def demarcate(self, fcurve):
+        s = self.start_frame
+        e = self.stop_frame
+
+        sv = fcurve.evaluate(s)
+        ev = fcurve.evaluate(e)
+        cspy.actions.insert_keyframe_extreme(fcurve, s, sv, fast=True)
+        cspy.actions.insert_keyframe_extreme(fcurve, e, ev, fast=True)

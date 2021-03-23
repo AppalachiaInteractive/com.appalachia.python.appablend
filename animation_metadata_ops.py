@@ -4,9 +4,9 @@ from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.animation_metadata import *
 
-class AS_Split_Action_Via_Sheet(OPS_, Operator):
+class AS_OT_Split_Action_Via_Sheet(OPS_, Operator):
     """Split the current action using the provided sheet"""
-    bl_idname = "ops.aa_split_action_via_sheet"
+    bl_idname = "as.split_action_via_sheet"
     bl_label = "Split Via Sheet"
     bl_icon = Constants.ICON_SHEET
     bl_options = {'UNDO'}
@@ -15,14 +15,14 @@ class AS_Split_Action_Via_Sheet(OPS_, Operator):
     def do_poll(cls, context):
         obj = context.active_object
 
-        if (obj is None or obj.animation_split is None or obj.animation_split_clips is None 
+        if (obj is None or obj.animation_split is None or obj.animation_split_clips is None
             or len(obj.animation_split_clips) == 0 or obj.animation_split.sheet_path == ''
             or obj.animation_split.action == ''):
             return False
         return True
 
-    def do_execute(self, context):        
-        
+    def do_execute(self, context):
+
         obj = context.active_object
         animation_split = obj.animation_split
 
@@ -32,6 +32,6 @@ class AS_Split_Action_Via_Sheet(OPS_, Operator):
 
         for clip in obj.animation_split_clips:
             clip.split_action(master_action)
-        
-        self.report({'INFO'}, 'Split {0} actions from animation sheet.'.format(len(obj.animation_split_clips)))       
+
+        self.report({'INFO'}, 'Split {0} actions from animation sheet.'.format(len(obj.animation_split_clips)))
         return {'FINISHED'}

@@ -14,24 +14,24 @@ class Constants:
         'Pose':'BIND',
         'Fight Idle':'CMBT WAIT',
         'Sleeping':'ACTV SLEP eLAND',
-        'Go To Sleep':'ACTV SLEP eLAND', 
-        'Go To Sleep':'ACTV SLEP eLAND', 
+        'Go To Sleep':'ACTV SLEP eLAND',
+        'Go To Sleep':'ACTV SLEP eLAND',
         'Stund Up':'ACTV Stop SLEP eLAND',
         'Crawling':'MOVE CRWL eLAND',
         'Walking':'MOVE WALK eLAND',
         'Swiming':'MOVE PDDL eSURF',
-        'Swimming':'MOVE PDDL eSURF',    
+        'Swimming':'MOVE PDDL eSURF',
         'Strafe':'MOVE STRF eLAND',
         'side':'',
         'Side':'',
         'Hit':'CMBT IMPT eLAND',
         'Eating':'ACTV EATT eLAND',
         'Death':'CMBT DIEC eLAND',
-        'Diging':'ACTV DIGG eLAND', 
+        'Diging':'ACTV DIGG eLAND',
         'Jumping':'MOVE JUMP eLAND',
         'Scraching':'IDLE GROO eLAND',
         'Walk':'MOVE WALK eLAND',
-        'Runing':'Running',        
+        'Runing':'Running',
         'Running Fast':'MOVE GLLP eLAND',
         'Running':'MOVE CNTR eLAND',
         'Run':'MOVE CNTR eLAND',
@@ -80,7 +80,7 @@ class Constants:
 
     PREFIXES = ['.', '-', ' ', '_', ',']
 
-    
+
 
     ENVIRONMENTS = {
         'AQUATIC':'eAQUA',
@@ -95,11 +95,11 @@ class Constants:
     ENVIRONMENTS_ENUM_DEF = 'eLAND'
 
     DIRECTIONS = {
-        'left':'LEFT', 
+        'left':'LEFT',
         'right':'RIGHT',
-        'front':'FRONT', 
-        'back':'BACK', 
-        'up':'UPWR', 
+        'front':'FRONT',
+        'back':'BACK',
+        'up':'UPWR',
         'down':'DOWN',
         'none':'NONE',
         'center':'CENT',
@@ -107,29 +107,29 @@ class Constants:
         'high':'HIGH',
         'mid':'MIDD',
     }
-    
-    DIRECTIONS_ENUM = cspy.utils.create_enum_dict(DIRECTIONS)    
+
+    DIRECTIONS_ENUM = cspy.utils.create_enum_dict(DIRECTIONS)
     DIRECTIONS_ENUM_DEF = 'NONE'
 
     STAGES = {
         'loop':'LOOP',
         'start':'STRT',
-        'end':'STOP', 
+        'end':'STOP',
         'stop':'STOP'
     }
-    
+
     STAGES_ENUM =  cspy.utils.create_enum_dict(STAGES)
     STAGES_ENUM_DEF = 'LOOP'
-        
+
     STATES = {
         'idle':'IDLE',
         'idle-sitting':'SITT',
         'motion':'MOVE',
-        'activity':'ACTV', 
-        'combat':'CMBT', 
-        'attack':'ATCK', 
+        'activity':'ACTV',
+        'combat':'CMBT',
+        'attack':'ATCK',
         'vocalize':'VOCL',
-        'sense':'SENS', 
+        'sense':'SENS',
         'emotion':'EMOT',
     }
 
@@ -142,7 +142,7 @@ class Constants:
         'CIRCLE':'CIRC',
         'DIG':'DIGG',
         'CLEAN':'CLEAN',
-        'GROOM':'GROO',        
+        'GROOM':'GROO',
         'SCRATCH-TREE':'SCTR',
         'TASTE-PLANT':'PLNT',
         'EAT':'EATT',
@@ -152,7 +152,7 @@ class Constants:
         'SLEEP':'SLEP',
         'URINATE':'URIN',
         'URINATE-MARK':'MARK',
-        'DEFECATE':'DEFE',        
+        'DEFECATE':'DEFE',
         'HEAD-BUTT':'HEAD',
         'HEAD-HORN':'HORN',
         'HEAD-BITE':'BITE',
@@ -235,7 +235,7 @@ class Constants:
 
     SUBSTATES_ENUM =  cspy.utils.create_enum_dict(SUBSTATES)
     SUBSTATES_ENUM_DEF = 'GNRC'
-    
+
     SUBSTATES_REV = {}
 
     for key in SUBSTATES.keys():

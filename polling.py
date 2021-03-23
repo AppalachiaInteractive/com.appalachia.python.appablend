@@ -21,7 +21,7 @@ class CONTEXT_MODES:
     WEIGHT_GPENCIL = 'WEIGHT_GPENCIL'
     VERTEX_GPENCIL = 'VERTEX_GPENCIL'
 
-class OBJECT_TYPES:   
+class OBJECT_TYPES:
     MESH = 'MESH'
     CURVE = 'CURVE'
     SURFACE = 'SURFACE'
@@ -39,7 +39,7 @@ class OBJECT_TYPES:
     CAMERA = 'CAMERA'
     SPEAKER = 'SPEAKER'
 
-class POLL:        
+class POLL:
     @classmethod
     def active_object(cls, context):
         return context.active_object is not None
@@ -67,12 +67,12 @@ class POLL:
     @classmethod
     def active_ARMATURE_AND_BONES(cls, context):
         return POLL.active_object_type(context, OBJECT_TYPES.ARMATURE) and len(context.active_object.data.bones) > 0
-    
+
     @classmethod
     def active_ARMATURE_AND_BONES_AND_ANIMRET_SOURCE(cls, context):
         return (
-            POLL.active_ARMATURE(context) and 
-            len(context.active_object.data.bones) > 0 and 
+            POLL.active_ARMATURE(context) and
+            len(context.active_object.data.bones) > 0 and
             context.active_object.anim_ret.source != '' and
             context.active_pose_bone
         )
@@ -91,7 +91,7 @@ class POLL:
 
     @classmethod
     def mode(cls, context, mode):
-        return context.mode == mode    
+        return context.mode == mode
     @classmethod
     def mode_EDIT_MESH(cls, context):
         return POLL.mode(context, CONTEXT_MODES.EDIT_MESH)

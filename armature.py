@@ -11,11 +11,11 @@ def to_rest_position(armature):
 def to_pose_position(armature):
     armature.data.pose_position = 'POSE'
 
-class Utils:    
+class Utils:
     roots = ['Root','RootMotion','Root Motion']
-    
+
     @classmethod
-    def get_root_strings(cls):        
+    def get_root_strings(cls):
         search = []
         for root in cls.roots:
             u = root.replace(' ', '_')
@@ -30,13 +30,13 @@ class ArmatureModification(bpy.types.PropertyGroup):
     root_bone_name: bpy.props.StringProperty(name='Root Motion Bone')
     searched_root_bone: bpy.props.BoolProperty(name='Searched Root Motion Bone')
 
-    def sync_root_motion_mute_poll(self):        
+    def sync_root_motion_mute_poll(self):
         obj = bpy.context.active_object
         if obj is None:
             return False
         action = obj.animation_data.action
         if action is None:
-            return False            
+            return False
         if self.root_bone_name == '':
             if self.searched_root_bone:
                 return False
@@ -65,10 +65,10 @@ class ArmatureModification(bpy.types.PropertyGroup):
             return
 
         group = action.groups[self.root_bone_name]
-        
+
         for fcurve in group.channels:
             val = self.root_motion_mute_internal
-            if fcurve.mute != val: 
+            if fcurve.mute != val:
                 fcurve.mute = val
 
     def get_root_motion_mute(self):
@@ -78,5 +78,5 @@ class ArmatureModification(bpy.types.PropertyGroup):
     def set_root_motion_mute(self, value):
         self.root_motion_mute_internal = value
         self.sync_root_motion_mute()
-    
+
     root_motion_mute: bpy.props.BoolProperty(name='Root Motion Muted', get=get_root_motion_mute,set=set_root_motion_mute)

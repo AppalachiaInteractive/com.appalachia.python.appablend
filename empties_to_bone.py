@@ -19,7 +19,7 @@ blender_version = EB_blender_version()
 
 def delete_edit_bone(editbone):
     bpy.context.active_object.data.edit_bones.remove(editbone)
-    
+
 def set_active_object(object_name):
      bpy.context.view_layer.objects.active = bpy.data.objects[object_name]
      bpy.data.objects[object_name].select_set(state=True)
@@ -73,7 +73,7 @@ def signed_angle(vector_u, vector_v, normal):
     if vector_u.cross(vector_v).angle(normal) < 1:
         a = -a
     return a
-    
+
 def set_bone_layer(editbone, layer_idx, multi=False):
     editbone.layers[layer_idx] = True
     if multi:
@@ -97,7 +97,7 @@ def _initialize_armature():
     empties_names = [i.name for i in empties if i.type == "EMPTY"]
 
     """ for e in empties.copy():
-        if not e.children or len(e.children) == 0:            
+        if not e.children or len(e.children) == 0:
             bpy.ops.object.empty_add()
             leaf = bpy.context.active_object
             leaf.parent = e
@@ -141,7 +141,7 @@ def _initialize_armature():
         emp_y =  Vector((mat[0][1],mat[1][1],mat[2][1]))
         emp_z = Vector((mat[0][2],mat[1][2],mat[2][2]))
 
-        vec, roll = mat3_to_vec_roll(emp.matrix_world.to_3x3())     
+        vec, roll = mat3_to_vec_roll(emp.matrix_world.to_3x3())
         new_bone = armature.data.edit_bones.new(emp_name)
         new_bone.head = emp.matrix_world.to_translation()
         new_bone.tail = new_bone.head + (vec)*scn.eb_bone_scale
@@ -205,16 +205,16 @@ def _initialize_armature():
             child_count = 0 if not children_name else len(children_name)
 
             set_tail_to_child = False
-            
+
             if child_count == 1:
                 emp_child = bpy.data.objects.get(children_name[0])
                 loc = emp_child.matrix_world.to_translation()
-            
+
                 if loc != e_bone.head:# avoid zero length bone errors
                     print('{0}: [{1}]'.format(emp_child.name, abs((loc-e_bone.tail).magnitude)))
-                    e_bone.tail = loc                      
+                    e_bone.tail = loc
                     set_tail_to_child = True
-                    
+
             if not set_tail_to_child:
                 # if no children or multiple children, use the empty primary axis or parent bone vector to position the tail
                 if child_count > 1:
@@ -235,8 +235,8 @@ def _initialize_armature():
                         print("No primary axis yet, use parent bone vector", e_bone.name)
                         e_bone.tail = e_bone.head + vec
                     print('{0}: updated tail - [{1}]'.format(e_bone.name, e_bone.tail))
-                  
-          
+
+
             # set roll according to user defined target axis
             target_axis = None
             if scn.eb_auto_target_axis == "X":
@@ -253,7 +253,7 @@ def _initialize_armature():
                 target_axis = -emp_z
 
             align_bone_x_axis(e_bone, target_axis)
-    
+
     return bones_dict
 
 def sync_bone_positions(armature_old):
@@ -261,17 +261,17 @@ def sync_bone_positions(armature_old):
 
     #armature_new.matrix_world = armature_old.matrix_world
     active, mode = cspy.utils.enter_mode(armature_old, cspy.bones.EDIT_MODE_SET)
-    
+
     edit_bone_dict = cspy.bones.get_edit_bone_data_dict(armature_old)
     print('edit bone data dict length: {0}'.format(len(edit_bone_dict.keys())))
-    
+
     cspy.utils.enter_mode(armature_new, cspy.bones.EDIT_MODE_SET)
 
     for bone in armature_new.data.edit_bones:
         bone_name = bone.name
         #print('Checking for bone {0}'.format(bone_name))
         bone = get_edit_bone(bone_name)
-        
+
         if not bone_name in edit_bone_dict:
             print('{0} not found'.format(bone_name))
             #for key in edit_bone_dict.keys():
@@ -298,15 +298,15 @@ def _create_norot_bones():
         # disable inherit rotation (adding the Child Of constraint would lead to double transformation)
         new_bone.use_inherit_rotation = False
         set_bone_layer(new_bone, 1)
-        
+
         #set parents
     print("  parent bones...")
     for edit_bone in bpy.context.active_object.data.edit_bones:
         if "_NOROT" in edit_bone.name or edit_bone.parent == None:
-            continue        
+            continue
         norot_bone = get_edit_bone(edit_bone.name+"_NOROT")
         norot_bone.parent = get_edit_bone(edit_bone.parent.name+"_NOROT")
-    
+
 def _constrain_bones(bones_dict):
     print("Constrain bones...")
     # constrain bones
@@ -320,11 +320,11 @@ def _constrain_bones(bones_dict):
             continue
         emp = bpy.data.objects.get(b)
         # set NOROT bones constraints
-        if scn.eb_auto_bones_orientation:           
+        if scn.eb_auto_bones_orientation:
             cns = bone_NOROT.constraints.new("COPY_TRANSFORMS")
             cns.target = scn.eb_target_armature
-            cns.subtarget = bone.name            
-            
+            cns.subtarget = bone.name
+
             cns = bone_NOROT.constraints.new("CHILD_OF")
             cns.target = emp
             cns.inverse_matrix = cns.target.matrix_world.inverted()
@@ -343,25 +343,25 @@ def _constrain_bones(bones_dict):
                 if len(bone_NOROT.children) == 1:
                 #elif len(bone_NOROT.children) == 1:
                     #print('1 child damped track')
-                    cns = bone_NOROT.constraints.new("DAMPED_TRACK")        
-                    cns_target_name = bone.children[0].name.replace('_NOROT', '')   
+                    cns = bone_NOROT.constraints.new("DAMPED_TRACK")
+                    cns_target_name = bone.children[0].name.replace('_NOROT', '')
                     cns_target = bpy.data.objects[cns_target_name]
                     cns.target = cns_target
                 elif 'pelvis' in bone_NOROT.name.lower():
                     #print('pelvis case')
                     child_spines = [c for c in bone_NOROT.children if 'spine' in c.name.lower() or 'spine' == c.name.lower()]
-                    if child_spines and len(child_spines) == 1:                        
-                        cns = bone_NOROT.constraints.new("DAMPED_TRACK")        
+                    if child_spines and len(child_spines) == 1:
+                        cns = bone_NOROT.constraints.new("DAMPED_TRACK")
                         cns.track_axis = 'TRACK_NEGATIVE_Y'
-                        cns_target_name = child_spines[0].name.replace('_NOROT', '')   
+                        cns_target_name = child_spines[0].name.replace('_NOROT', '')
                         cns_target = bpy.data.objects[cns_target_name]
                         cns.target = cns_target
                 elif 'spine' in bone_NOROT.name.lower():
                     #print('spine case')
                     child_spines = [c for c in bone_NOROT.children if 'spine' in c.name.lower() or 'neck' in c.name.lower()]
-                    if child_spines and len(child_spines) == 1:                        
-                        cns = bone_NOROT.constraints.new("DAMPED_TRACK")        
-                        cns_target_name = child_spines[0].name.replace('_NOROT', '')   
+                    if child_spines and len(child_spines) == 1:
+                        cns = bone_NOROT.constraints.new("DAMPED_TRACK")
+                        cns_target_name = child_spines[0].name.replace('_NOROT', '')
                         cns_target = bpy.data.objects[cns_target_name]
                         cns.target = cns_target
         else:
@@ -377,7 +377,7 @@ def _constrain_bones(bones_dict):
             cns_rot.invert_x = scn.eb_invert_x
             cns_rot.invert_y = scn.eb_invert_y
             cns_rot.invert_z = scn.eb_invert_z
-            
+
         # set main bones constraints, just copy transforms
         cns_copy = bone.constraints.new("COPY_TRANSFORMS")
         cns_copy.target = bpy.context.active_object
@@ -396,7 +396,7 @@ def _create_armature():
     bones_dict = _initialize_armature()
 
     _create_norot_bones()
-    _constrain_bones(bones_dict)    
+    _constrain_bones(bones_dict)
     print("Armature created")
 
 def bake_anim(self, frame_start=0, frame_end=10, only_selected=False, bake_bones=True, bake_object=False, clear_constraints=False, shape_keys=False, _self=None, action_export_name=None):
@@ -406,7 +406,7 @@ def bake_anim(self, frame_start=0, frame_end=10, only_selected=False, bake_bones
     obj_data = []
     bones_data = []
     armature = bpy.data.objects.get(bpy.context.active_object.name)
-    
+
     def get_bones_matrix():
         matrix = {}
         for pbone in armature.pose.bones:
@@ -467,13 +467,13 @@ def bake_anim(self, frame_start=0, frame_end=10, only_selected=False, bake_bones
         bpy.data.actions.remove(action)
         action = bpy.data.actions.new(action_name)
         scn.eb_target_action = action
-        
+
     elif scn.eb_target_action_name != '':
         target_action_name = scn.eb_target_action_name.replace('.fbx','').replace('.Fbx','').replace('.FBX','')
         scn.eb_target_action_name = target_action_name
         if target_action_name in bpy.data.actions:
-            action = bpy.data.actions[target_action_name]      
-            bpy.data.actions.remove(action)        
+            action = bpy.data.actions[target_action_name]
+            bpy.data.actions.remove(action)
             action = bpy.data.actions.new(target_action_name)
         else:
             action = bpy.data.actions.new(target_action_name)
@@ -484,7 +484,7 @@ def bake_anim(self, frame_start=0, frame_end=10, only_selected=False, bake_bones
     anim_data.action = action
 
     def store_keyframe(bone_name, prop_type, fc_array_index, frame, value):
-        fc_data_path = 'pose.bones["' + bone_name + '"].' + prop_type
+        fc_data_path  = cspy.bones.get_bone_data_path(bone.name, prop_type)
         fc_key = (fc_data_path, fc_array_index)
         if not keyframes.get(fc_key):
             keyframes[fc_key] = []
@@ -564,7 +564,7 @@ def bake_anim(self, frame_start=0, frame_end=10, only_selected=False, bake_bones
             if clear_constraints:
                 while len(pbone.constraints):
                     pbone.constraints.remove(pbone.constraints[0])
-                    
+
     if bake_object:
         euler_prev = None
         quat_prev = None
@@ -602,7 +602,7 @@ def bake_anim(self, frame_start=0, frame_end=10, only_selected=False, bake_bones
             armature.keyframe_insert("scale", index=-1, frame=f, group=name)
 
     action.use_fake_user = True
-    
+
     # restore current frame
     scn.frame_set(current_frame)
 
@@ -610,29 +610,29 @@ def bake_anim(self, frame_start=0, frame_end=10, only_selected=False, bake_bones
         for constraint in bone.constraints:
             bone.constraints.remove(constraint)
 
-def _initialize_empties(scn, armature):   
+def _initialize_empties(scn, armature):
 
     empties = {}
     top_level_empty = None
     bone_matrices = cspy.bones.get_edit_bone_matrices(armature)
     bone_tail_updates = {}
-        
-    for bone in armature.data.bones:        
+
+    for bone in armature.data.bones:
         bone_matrix = bone_matrices[bone.name]
         bpy.ops.object.empty_add()
         empty = bpy.context.active_object
         empty.name = bone.name
-        empties[bone.name] = empty 
+        empties[bone.name] = empty
         if bone.parent:
             empty.parent = empties[bone.parent.name]
 
             if not bone.children:
                 empty_children = [obj for obj in bpy.data.objects if (obj.parent_type == 'BONE' and obj.parent == armature and obj.parent_bone == bone.name)]
-                
+
                 print('{0}: empty children {1}'.format(bone.name, empty_children))
                 if empty_children:
                     loc = Vector([0.0, 0.0, 0.0])
-                    
+
                     for e in empty_children:
                         eloc, erot, esca = e.matrix_world.decompose()
                         loc += eloc
@@ -643,20 +643,20 @@ def _initialize_empties(scn, armature):
             if top_level_empty is None:
                 top_level_empty = empty
         empty.matrix_world = armature.matrix_world @ bone_matrix
-    
-    for bone_name in bone_tail_updates.keys():        
+
+    for bone_name in bone_tail_updates.keys():
         bone_tail_update = bone_tail_updates[bone_name]
         #cspy.bones.set_world_tail(armature, bone_name, bone_tail_update)
 
     def consume_armature_child(child):
-        if child.type != 'EMPTY':  
+        if child.type != 'EMPTY':
             bpy.data.objects.remove(child)
         else:
             empty_name = child.name
             child.name = '{0}_ORIG'.format(child.name)
             child_matrix = child.matrix_world.copy()
 
-            bpy.ops.object.empty_add()  
+            bpy.ops.object.empty_add()
             e = bpy.context.active_object
             e.name = empty_name
             empties[e.name] = e
@@ -664,12 +664,12 @@ def _initialize_empties(scn, armature):
             if child.children:
                 for c in child.children:
                     consume_armature_child(c)
-            
-            if child.parent_type == 'BONE' and child.parent_bone != '': 
+
+            if child.parent_type == 'BONE' and child.parent_bone != '':
                 e.parent = empties[child.parent_bone]
             else:
                 e.parent = empties[child.parent.name.replace('_ORIG','')]
-                
+
             e.matrix_world = child_matrix
 
     for ac in armature.children:
@@ -685,10 +685,10 @@ def _initialize_empties(scn, armature):
             leaf.location = Vector([0.0, 100.0, 0.0])
             leaf.name = 'end.{0}'.format(empty.name)
             new_empties.append(leaf)
-    
+
     for empty in new_empties:
         empties[empty.name] = empty
-    
+
     return top_level_empty, empties
 
 def _constrain_empties(scn, armature, empties):
@@ -701,19 +701,19 @@ def _constrain_empties(scn, armature, empties):
 
         cns_copy = empty.constraints.new("COPY_TRANSFORMS")
 
-        if empty_name in armature.pose.bones:            
-            bone = armature.pose.bones[empty_name]            
+        if empty_name in armature.pose.bones:
+            bone = armature.pose.bones[empty_name]
             cns_copy.target = armature
             cns_copy.subtarget = bone.name
         else:
             t = '{0}_ORIG'.format(empty_name)
-            if t in bpy.data.objects:                
+            if t in bpy.data.objects:
                 cns_copy.target = bpy.data.objects['{0}_ORIG'.format(empty_name)]
             else:
                 cns_copy.target = bpy.data.objects[empty_name]
 
 def _deconstruct_armature():
-    print("")    
+    print("")
 
     scn = bpy.context.scene
 
@@ -729,7 +729,7 @@ def _deconstruct_armature():
     top_level_empty.parent = armature.parent
     _constrain_empties(scn, armature, empties)
 
-    cspy.utils.deselect_all() 
+    cspy.utils.deselect_all()
 
     cspy.utils.set_object_active(top_level_empty)
     cspy.utils.select_by_names(empties.keys())
@@ -741,7 +741,7 @@ def _deconstruct_armature():
 
     bpy.data.actions.remove(armature.animation_data.action)
     ad = armature.data
-    
+
     bpy.data.objects.remove(armature)
     bpy.data.armatures.remove(ad)
 

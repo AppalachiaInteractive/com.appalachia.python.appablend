@@ -4,7 +4,7 @@ import cspy
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.polling import POLL
 from cspy.timeline import *
-from cspy.timeline_ops import * 
+from cspy.timeline_ops import *
 
 class TIMELINE_PT_Timeline:
     bl_label = "Timeline"
@@ -72,7 +72,7 @@ class TIMELINE_VIEW_3D_PT_UI_Tool_ClearTransforms(TIMELINE_PT_Timeline, UI.VIEW_
         row.operator("pose.loc_clear", text="Location")
         row.operator("pose.rot_clear", text="Rotation")
         row.operator("pose.scale_clear", text="Scale")
-        
+
         row = box.row()
 
         row.operator("pose.user_transforms_clear", text="Reset Unkeyed")

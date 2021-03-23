@@ -6,14 +6,14 @@ class _SortKey():
         self.value = None
         self.index = 0
 
-def sort(collection, prop='name', asc=True):    
-    n = len(collection) 
-  
+def sort(collection, prop='name', asc=True):
+    n = len(collection)
+
     swapped = True
 
     while(swapped):
         swapped=False
-        for i in range(n-1):    
+        for i in range(n-1):
             c1 = collection[i]
             c2 = collection[i+1]
 
@@ -27,4 +27,4 @@ def sort(collection, prop='name', asc=True):
                 collection.move(i, i+1)
 
 
-  
+

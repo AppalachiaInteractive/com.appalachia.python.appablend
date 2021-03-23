@@ -10,7 +10,7 @@ def get_or_create_fcurve(action, data_path, array_index=-1, group=None):
     fc = action.fcurves.new(data_path, index=array_index)
     fc.group = group
     return fc
-    
+
 def add_keyframe_quat(action, quat, frame, data_path, group=None):
     for i in range(len(quat)):
         fc = get_or_create_fcurve(action, data_path, i, group)
@@ -65,7 +65,7 @@ def shift_fcurve_channels(action_prefix, bone_name, matrix):
                         mat = Quaternion(key_in).to_matrix().to_4x4()
                         mat = matrix @ mat
                         key = mat.to_quaternion()
-                        
+
                     for a in range(0, len(curves)):
                         curves[a].keyframe_points[i].co[1] = key[a]
 

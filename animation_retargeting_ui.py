@@ -5,14 +5,14 @@ from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.animation_retargeting import *
 from cspy.animation_retargeting_ops import *
 
-class OBJECT_UL_targetbones(UIList):        
+class OBJECT_UL_targetbones(UIList):
     # Be careful not to shadow FILTER_ITEM!
-    
+
     def draw_filter(self, context, layout):
         anim_ret = context.active_object.anim_ret
         # Nothing much to say here, it's usual UI code...
         row = layout.row()
-    
+
         row.prop(anim_ret, "show_def", text='DEF', toggle=True)
         row.prop(anim_ret, "show_mch", text='MCH',  toggle=True)
         row.prop(anim_ret, "show_org", text='ORG',  toggle=True)
@@ -22,40 +22,40 @@ class OBJECT_UL_targetbones(UIList):
 
         row = layout.row()
         subrow = row.row(align=True)
-        subrow.prop(self, "filter_name", text="")        
-        subrow.prop(self, "use_filter_invert", text="", icon='ARROW_LEFTRIGHT')  
-              
+        subrow.prop(self, "filter_name", text="")
+        subrow.prop(self, "use_filter_invert", text="", icon='ARROW_LEFTRIGHT')
+
         subrow = row.row(align=True)
-        subrow.prop(self, "use_filter_sort_alpha", text='', icon='SORTALPHA')        
+        subrow.prop(self, "use_filter_sort_alpha", text='', icon='SORTALPHA')
         icon = 'SORT_ASC' if self.use_filter_sort_reverse else 'SORT_DESC'
         subrow.prop(self, "use_filter_sort_reverse", text="", icon=icon)
 
-    def filter_items(self, context, data, propname): 
-        """Filter and order items in the list.""" 
-                    
+    def filter_items(self, context, data, propname):
+        """Filter and order items in the list."""
+
         helper_funcs = bpy.types.UI_UL_list
-                       
+
         items = getattr(data, propname)
-        
+
         # Filtering by name
         filtered = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, items, "name", reverse=False)
-                          
+
         if not filtered:
             filtered = [self.bitflag_filter_item] * len(items)
-        
+
         d = context.active_object.data
         anim_ret = context.active_object.anim_ret
-           
+
         for index, bone in enumerate(items):
             excluded = False
             found=False
-            
+
             anim_ret_bone = bone.anim_ret_bone
 
             if not anim_ret_bone:
                 excluded = True
             if not excluded and anim_ret_bone.source_bone_name == '':
-                excluded = True 
+                excluded = True
             if bone.name.startswith(ObjectAnimRet.prefix):
                 excluded = True
             if not excluded and not anim_ret.show_def and 'DEF-' in bone.name:
@@ -75,33 +75,33 @@ class OBJECT_UL_targetbones(UIList):
                         if data_bone.layers[layer_id]:
                             found=True
                             break
-                            
+
             if excluded or not found:
                 filtered[index] &= ~self.bitflag_filter_item
 
-            
-        ordered = [] 
+
+        ordered = []
 
         # Reorder by name or average weight.
         if self.use_filter_sort_alpha:
             sort = [(idx, getattr(it, 'name', "")) for idx, it in enumerate(items)]
-            
+
             ordered = helper_funcs.sort_items_helper(sort, lambda e: e[1].lower())
-        
-        return filtered, ordered    
- 
+
+        return filtered, ordered
+
     def draw_item(self, _context, layout, _data, item, icon, _active_data_, _active_propname, _index):
         # assert(isinstance(item, bpy.types.VertexGroup))
         bone = item
         anim_ret_bone = bone.anim_ret_bone
         anim_ret_constraints = bone.anim_ret_constraints
 
-        has_source = anim_ret_bone is not None and anim_ret_bone.source_bone_name != ''        
+        has_source = anim_ret_bone is not None and anim_ret_bone.source_bone_name != ''
 
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            
+
             layout.prop(bone, "name", text="", emboss=False, icon_value=icon)
-            
+
             icon = Constants.ICON_ON if has_source else Constants.ICON_OFF
             layout.label(text="", icon=icon)
 
@@ -112,25 +112,25 @@ class OBJECT_UL_targetbones(UIList):
             for con in anim_ret_constraints:
                 constraint_hits.add(con.constraint_type)
                 use_offset_bone = con.use_offset_bone or use_offset_bone
-                        
+
             layout.label(text=str(anim_ret_bone.influence))
             layout.label(text="", icon= Constants.ICON_HIDE_OFF if anim_ret_bone.hide_off else Constants.ICON_HIDE_ON)
             layout.label(text="", icon= Constants.ICON_USE_MIRROR if anim_ret_bone.use_mirror else Constants.ICON_OFF)
             layout.label(text="", icon= Constants.ICON_USE_OFFSET_BONE if use_offset_bone else Constants.ICON_OFF)
 
-            for key in constraint_hits:                
+            for key in constraint_hits:
                 if key == '':
                     value = 'X'
                 else:
                     value = Constants.CONSTRAINT_ICONS[key]
                 layout.label(text="", icon= value)
-            
+
         elif self.layout_type == 'GRID':
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
-        
+
             import bpy
-      
+
 class OBJECT_PT_ObjectPanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.DATA):
     bl_label = 'Animation Retargeting'
     bl_icon = cspy.icons.PLUGIN
@@ -139,15 +139,15 @@ class OBJECT_PT_ObjectPanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.DATA):
     def do_poll(cls, context):
         return POLL.active_ARMATURE_AND_BONES(context)
 
-    def do_draw(self, context, scene, layout, obj):      
-        
+    def do_draw(self, context, scene, layout, obj):
+
         target_pose = obj.pose
         target_pbones = target_pose.bones
-        
+
         anim_ret = obj.anim_ret
 
         col = layout.column(align=True)
-        
+
         row = col.row(align=True)
         row.enabled = not anim_ret.is_frozen
         row.label(text='Cache')
@@ -157,7 +157,7 @@ class OBJECT_PT_ObjectPanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.DATA):
         row.separator()
         row.operator(AR_Clear_Cache.bl_idname)
         row.operator(AR_Debug_Cache.bl_idname)
-        row = col.row(align=True)        
+        row = col.row(align=True)
         row.label(text=AR_OPS_.get_cache_status(context))
 
         col.separator()
@@ -170,30 +170,30 @@ class OBJECT_PT_ObjectPanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.DATA):
         row = row.split(align=True)
         row.enabled = True
         row.prop(anim_ret, 'is_frozen', text='', toggle=True, icon=Constants.ICON_FREEZE)
-              
+
         source_obj = anim_ret.source
-        
+
         if not source_obj or not source_obj.type == 'ARMATURE':
             return
-                
+
         row = col.row(align=True)
         row.enabled = not anim_ret.is_frozen
 
         old_index = anim_ret.active_index
 
         row.template_list("OBJECT_UL_targetbones", "", target_pose, "bones", anim_ret, "active_index", rows=3)
-        
-        for bone in target_pbones:            
+
+        for bone in target_pbones:
             if bone.anim_ret_bone.bone_name != bone.name:
                 bone.anim_ret_bone.bone_name = bone.name
-            
+
             for cd in bone.anim_ret_constraints:
                 cd.bone_name = bone.name
 
             for con in bone.constraints:
                 if con.name.startswith(ObjectAnimRet.prefix):
                     if (con.target is not None and
-                        con.subtarget is not None and 
+                        con.subtarget is not None and
                         con.subtarget != ''
                         and con.subtarget not in con.target.data.bones
                     ):
@@ -207,7 +207,7 @@ class OBJECT_PT_ObjectPanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.DATA):
 
         if has_active_bone:
             active_pbone = target_pbones[active_bone_name]
-            anim_ret_bone = active_pbone.anim_ret_bone        
+            anim_ret_bone = active_pbone.anim_ret_bone
             BONE_PT_PoseBonePanel.draw_buttons(col, source_obj, active_pbone)
         else:
             print('skipping draw')
@@ -244,7 +244,7 @@ class BONE_PT_PoseBonePanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.BONE):
         row = layout.row()
         row.label(text=pose_bone.name)
         row.prop_search(anim_ret_bone, 'source_bone_name', source_obj.data, 'bones', text='')
-        
+
         row = layout.row()
 
         row.operator(AR_Refresh_Constraints.bl_idname, text='', icon=Constants.ICON_REFRESH)
@@ -270,10 +270,10 @@ class BONE_PT_PoseBonePanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.BONE):
 
             layout.alert = (state == 'ALERT')
             layout.enabled = (state == 'ENABLED')
-            
+
             return layout
 
-        for cd in anim_ret_constraints:  
+        for cd in anim_ret_constraints:
             row = layout.row()
             state = 'ENABLED'
             if no_source:
@@ -283,7 +283,7 @@ class BONE_PT_PoseBonePanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.BONE):
                 icon = 'X'
             else:
                 icon = Constants.CONSTRAINT_ICONS[cd.constraint_type]
-            
+
             row.label(text=cd.name,icon=icon)
             icon = Constants.ICON_HIDE_OFF if cd.hide_off else Constants.ICON_HIDE_ON
             layout_state(row, state).prop(cd, 'hide_off', text='', toggle=True, icon=icon)
@@ -292,7 +292,7 @@ class BONE_PT_PoseBonePanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.BONE):
             layout_state(row, state).prop(cd, 'influence', text='')
             layout_state(row, state).prop(cd, 'use_constraint', text='', toggle=True, icon='X')
 
-def register():  
+def register():
     bpy.types.Object.anim_ret = bpy.props.PointerProperty(type=ObjectAnimRet)
     bpy.types.PoseBone.anim_ret_bone = bpy.props.PointerProperty(type=BoneAnimRet)
     bpy.types.PoseBone.anim_ret_constraints = bpy.props.CollectionProperty(type=ConstraintAnimRet)

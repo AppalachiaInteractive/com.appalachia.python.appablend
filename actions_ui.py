@@ -4,7 +4,7 @@ import cspy
 from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.ui import PT_OPTIONS, PT_, UI
-from cspy.actions import *  
+from cspy.actions import *
 from cspy.actions_ops import *
 
 
@@ -49,7 +49,7 @@ def draw_keyframe_all(layout, scene):
 
 
 def draw_baking(layout, scene):
-    col = layout.column(align=True, heading='Baking')    
+    col = layout.column(align=True, heading='Baking')
     row = col.row(align=True)
     row.operator(ACT_OT_bake_selected_to_action.bl_idname)
     row.operator(ACT_OT_bake_selected_to_action_all.bl_idname)
@@ -72,9 +72,9 @@ class VIEW_3D_PT_UI_Tool_Actions(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
 
         col.operator(ACT_OT_Action_Euler_To_Quaternion.bl_idname)
         col.operator(ACT_OT_Group_Actions_By_Bone.bl_idname)
-        
+
         col.operator(ACT_OT_combine_all_actions.bl_idname)
-        
+
 
 
 class DOPESHEET_EDITOR_PT_UI_Tool_Actions(bpy.types.Panel, PT_, UI.DOPESHEET_EDITOR.UI):
@@ -91,7 +91,7 @@ class DOPESHEET_EDITOR_PT_UI_Tool_Actions(bpy.types.Panel, PT_, UI.DOPESHEET_EDI
         box = layout.box()
         box.label(text='Globals')
         draw_globals(box, scene)
-        
+
         box = layout.box()
         box.label(text='Baking')
         draw_baking(box, scene)
@@ -148,7 +148,7 @@ class DOPESHEET_EDITOR_PT_UI_Tool_Keyframe_All(bpy.types.Panel, PT_, UI.DOPESHEE
         box = layout.box()
         draw_keyframe_all(box, scene)
 
-def register():  
+def register():
     bpy.types.Object.action_op_helper = bpy.props.PointerProperty(type=ActionOpHelper)
 
 def unregister():

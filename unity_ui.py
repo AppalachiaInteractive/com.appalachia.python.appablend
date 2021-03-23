@@ -3,11 +3,12 @@ from cspy.unity import *
 from cspy.unity_ops import *
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.polling import POLL
+from cspy import subtypes
 
-def draw_clip(unity_clip, layout): 
+def draw_clip(unity_clip, layout):
     box = layout.box()
     col = box.column(align=True)
-    row = col.row(align=True)    
+    row = col.row(align=True)
     row_1 = row.split()
     row_1.enabled = False
     row_1.prop(unity_clip, 'action')
@@ -18,14 +19,14 @@ def draw_clip(unity_clip, layout):
     col.prop(unity_clip, 'fbx_name')
     col.prop(unity_clip, 'name')
     col.enabled = False
-    
+
     col = box.column(align=True)
 
     row = col.row(align=True)
     clamp_button = row.operator(UNITY_OT_clamp_to_clip.bl_idname)
     if unity_clip and unity_clip.action:
         clamp_button.action_name = unity_clip.action.name
-        clamp_button.clip_name = unity_clip.name        
+        clamp_button.clip_name = unity_clip.name
     play_button = row.operator(UNITY_OT_clamp_to_clip_and_play.bl_idname)
     if unity_clip and unity_clip.action:
         play_button.action_name = unity_clip.action.name
@@ -51,24 +52,24 @@ def draw_clip(unity_clip, layout):
 def draw_clip_row(unity_clip, layout):
     layout.label(text=unity_clip.name)
 
-class UNITY_UL_UnityClips(bpy.types.UIList):    
-    use_filter_sort_time: bpy.props.BoolProperty(name="Sort By Frame", default=True)    
+class UNITY_UL_UnityClips(bpy.types.UIList):
+    use_filter_sort_time: bpy.props.BoolProperty(name="Sort By Frame", default=True)
 
-    show_exclusive: bpy.props.BoolProperty(name="Show Exclusive", default=False)    
-    show_loop: bpy.props.BoolProperty(name="Show Looping", default=False)    
-    show_bake_rot: bpy.props.BoolProperty(name="Show Baked Rot.", default=False)    
-    show_bake_y: bpy.props.BoolProperty(name="Show Baked Y.", default=False)    
-    show_bake_xz: bpy.props.BoolProperty(name="Show Baked XZ.", default=False)     
-    show_offset_rot: bpy.props.BoolProperty(name="Show Offset Rot.", default=False)    
-    show_offset_y: bpy.props.BoolProperty(name="Show Offset Y", default=False)    
+    show_exclusive: bpy.props.BoolProperty(name="Show Exclusive", default=False)
+    show_loop: bpy.props.BoolProperty(name="Show Looping", default=False)
+    show_bake_rot: bpy.props.BoolProperty(name="Show Baked Rot.", default=False)
+    show_bake_y: bpy.props.BoolProperty(name="Show Baked Y.", default=False)
+    show_bake_xz: bpy.props.BoolProperty(name="Show Baked XZ.", default=False)
+    show_offset_rot: bpy.props.BoolProperty(name="Show Offset Rot.", default=False)
+    show_offset_y: bpy.props.BoolProperty(name="Show Offset Y", default=False)
 
-    hide_exclusive: bpy.props.BoolProperty(name="Hide Exclusive", default=False)  
-    hide_loop: bpy.props.BoolProperty(name="Hide Looping", default=False)    
-    hide_bake_rot: bpy.props.BoolProperty(name="Hide Baked Rot.", default=False)    
-    hide_bake_y: bpy.props.BoolProperty(name="Hide Baked Y.", default=False)    
-    hide_bake_xz: bpy.props.BoolProperty(name="Hide Baked XZ.", default=False)     
-    hide_offset_rot: bpy.props.BoolProperty(name="Hide Offset Rot.", default=False)    
-    hide_offset_y: bpy.props.BoolProperty(name="Hide Offset Y", default=False)    
+    hide_exclusive: bpy.props.BoolProperty(name="Hide Exclusive", default=False)
+    hide_loop: bpy.props.BoolProperty(name="Hide Looping", default=False)
+    hide_bake_rot: bpy.props.BoolProperty(name="Hide Baked Rot.", default=False)
+    hide_bake_y: bpy.props.BoolProperty(name="Hide Baked Y.", default=False)
+    hide_bake_xz: bpy.props.BoolProperty(name="Hide Baked XZ.", default=False)
+    hide_offset_rot: bpy.props.BoolProperty(name="Hide Offset Rot.", default=False)
+    hide_offset_y: bpy.props.BoolProperty(name="Hide Offset Y", default=False)
 
     def draw_filter(self, context, layout):
         row = layout.row()
@@ -97,28 +98,28 @@ class UNITY_UL_UnityClips(bpy.types.UIList):
 
         row = layout.row()
         subrow = row.row(align=True)
-        subrow.prop(self, "filter_name", text="")        
-        subrow.prop(self, "use_filter_invert", text="", icon='ARROW_LEFTRIGHT')  
-              
+        subrow.prop(self, "filter_name", text="")
+        subrow.prop(self, "use_filter_invert", text="", icon='ARROW_LEFTRIGHT')
+
         subrow = row.row(align=True)
-        subrow.prop(self, "use_filter_sort_alpha", text='', icon='SORTALPHA')   
+        subrow.prop(self, "use_filter_sort_alpha", text='', icon='SORTALPHA')
         subrow.prop(self, "use_filter_sort_time", text='', icon='SORTTIME')
         icon = 'SORT_ASC' if self.use_filter_sort_reverse else 'SORT_DESC'
         subrow.prop(self, "use_filter_sort_reverse", text="", icon=icon)
 
-    def filter_items(self, context, data, propname): 
-        """Filter and order items in the list.""" 
-                    
+    def filter_items(self, context, data, propname):
+        """Filter and order items in the list."""
+
         helper_funcs = bpy.types.UI_UL_list
-                       
+
         items = getattr(data, propname)
-        
+
         # Filtering by name
         filtered = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, items, "name", reverse=False)
-                          
+
         if not filtered:
             filtered = [self.bitflag_filter_item] * len(items)
-                   
+
         show_filter = self.show_loop or self.show_bake_rot or self.show_bake_xz or self.show_bake_y or self.show_offset_rot or self.show_offset_y
         hide_filter = self.hide_loop or self.hide_bake_rot or self.hide_bake_xz or self.hide_bake_y or self.hide_offset_rot or self.hide_offset_y
 
@@ -127,7 +128,7 @@ class UNITY_UL_UnityClips(bpy.types.UIList):
 
             if not item:
                 excluded = True
-                
+
             if not excluded and show_filter:
                 if self.show_exclusive: # all of them
                     included = (
@@ -165,50 +166,50 @@ class UNITY_UL_UnityClips(bpy.types.UIList):
                         (self.hide_offset_rot and item.rot_offset != 0.0) or
                         (self.hide_offset_y and item.y_offset != 0.0))
                 excluded = not included
-                            
+
             if excluded:
                 filtered[index] &= ~self.bitflag_filter_item
 
-        ordered = [] 
+        ordered = []
 
         # Reorder by name or average weight.
         if self.use_filter_sort_alpha:
             sort = [(idx, getattr(it, 'name', "")) for idx, it in enumerate(items)]
         elif self.use_filter_sort_time:
             sort = [(idx, getattr(it, 'start_frame', "")) for idx, it in enumerate(items)]
-            
+
             ordered = helper_funcs.sort_items_helper(sort, lambda e: e[1] if not hasattr(e[1], 'lower') else e[1].lower())
-        
+
         return filtered, ordered
- 
+
     def draw_item(self, _context, layout, _data, item, icon, _active_data_, _active_propname, _index):
         try:
             if self.layout_type in {'DEFAULT', 'COMPACT'}:
                 #draw_clip(item, layout)
                 draw_clip_row(item, layout)
-                
+
             elif self.layout_type == 'GRID':
                 layout.alignment = 'CENTER'
                 layout.label(text="", icon_value=icon)
         except Exception as inst:
             print(inst)
-            raise        
-        
+            raise
+
 def draw_clip_buttons(layout, scene, context):
     layout.prop(scene, 'unity_sheet_dir_path')
-    row = layout.row(align=True)    
+    row = layout.row(align=True)
     row.operator(UNITY_OT_refresh_clip_data.bl_idname)
     row.operator(UNITY_OT_refresh_clip_data_all.bl_idname)
-    row = layout.row(align=True)    
+    row = layout.row(align=True)
     row.operator(UNITY_OT_clear_clip_data.bl_idname)
     row.operator(UNITY_OT_clear_clip_data_all.bl_idname)
-    row = layout.row(align=True)    
+    row = layout.row(align=True)
     row.operator(UNITY_OT_sort_clip_data.bl_idname)
     row.operator(UNITY_OT_sort_clip_data_all.bl_idname)
-    row = layout.row(align=True)    
+    row = layout.row(align=True)
     row.prop(context.active_object.animation_data.action, 'unity_clip_template')
     row.operator(UNITY_OT_copy_clips_from_template.bl_idname)
-    row = layout.row(align=True)    
+    row = layout.row(align=True)
     row.operator(UNITY_OT_demarcate_clips.bl_idname)
 
 class VIEW_3D_PT_UI_Tool_Unity(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
@@ -222,7 +223,7 @@ class VIEW_3D_PT_UI_Tool_Unity(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
 
     def do_draw(self, context, scene, layout, obj):
         draw_clip_buttons(layout, scene, context)
-        
+
         action = obj.animation_data.action
 
         layout.template_list("UNITY_UL_UnityClips", "", action, "unity_clips", action, "unity_index", rows=2,maxrows=4)
@@ -242,12 +243,12 @@ class DOPESHEET_EDITOR_PT_UI_Tool_Unity(bpy.types.Panel, PT_, UI.DOPESHEET_EDITO
 
     def do_draw(self, context, scene, layout, obj):
         draw_clip_buttons(layout, scene, context)
-        
+
         action = obj.animation_data.action
 
         if len(action.unity_clips) == 0:
             return
-            
+
         layout.template_list("UNITY_UL_UnityClips", "", action, "unity_clips", action, "unity_index", rows=2,maxrows=4)
 
         if action.unity_index < 0:
@@ -257,8 +258,8 @@ class DOPESHEET_EDITOR_PT_UI_Tool_Unity(bpy.types.Panel, PT_, UI.DOPESHEET_EDITO
         draw_clip(unity_clip, layout)
 
 def register():
-    bpy.types.Scene.unity_sheet_dir_path = bpy.props.StringProperty(name="Sheet Dir Path", subtype='DIR_PATH') 
-    bpy.types.Action.unity_clip_template = bpy.props.PointerProperty(name="Unity Clip Template", type=bpy.types.Action) 
+    bpy.types.Scene.unity_sheet_dir_path = bpy.props.StringProperty(name="Sheet Dir Path", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
+    bpy.types.Action.unity_clip_template = bpy.props.PointerProperty(name="Unity Clip Template", type=bpy.types.Action)
     bpy.types.Action.unity_clips = bpy.props.CollectionProperty(name="Unity Clips", type=UnityClipMetadata)
     bpy.types.Action.unity_index = bpy.props.IntProperty(name='Unity Index', default = 0, min=0)
     bpy.types.Action.unity_clips_protected = bpy.props.BoolProperty(name='Unity Clips Protected', default=False)

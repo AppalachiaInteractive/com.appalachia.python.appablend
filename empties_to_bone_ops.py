@@ -18,21 +18,21 @@ class EB_OPS_():
         scn = context.scene
 
         return obj and obj.type == "EMPTY" and not scn.eb_target_armature
-    
+
     @classmethod
     def poll_deconstruct(cls, context):
         obj = context.active_object
         scn = context.scene
 
         return obj and obj.type == "ARMATURE" and obj.animation_data and obj.animation_data.action
-    
+
     @classmethod
     def poll_bake(cls, context):
         obj = context.active_object
 
         return obj and obj.type == "ARMATURE"
 
-    def execute_duplicate(self, context):        
+    def execute_duplicate(self, context):
         use_global_undo = context.preferences.edit.use_global_undo
         context.preferences.edit.use_global_undo = False
         try:
@@ -46,7 +46,7 @@ class EB_OPS_():
             context.preferences.edit.use_global_undo = use_global_undo
         return {'FINISHED'}
 
-    def execute_create(self, context): 
+    def execute_create(self, context):
         use_global_undo = context.preferences.edit.use_global_undo
         context.preferences.edit.use_global_undo = False
         try:
@@ -60,7 +60,7 @@ class EB_OPS_():
             context.preferences.edit.use_global_undo = use_global_undo
         return {'FINISHED'}
 
-    def execute_deconstruct(self, context):        
+    def execute_deconstruct(self, context):
         use_global_undo = context.preferences.edit.use_global_undo
         context.preferences.edit.use_global_undo = False
         try:
@@ -74,10 +74,10 @@ class EB_OPS_():
             context.preferences.edit.use_global_undo = use_global_undo
         return {'FINISHED'}
 
-    def draw_bake(self, context):        
+    def draw_bake(self, context):
         layout = self.layout
         layout.prop(self, 'bake_type', expand=True)
-        row = layout.column().row()    
+        row = layout.column().row()
         if self.bake_type == "STATIC":
             row.enabled = False
         row.prop(self, "frame_start", text="Frame Start")
@@ -86,7 +86,7 @@ class EB_OPS_():
         layout.prop(self, "clear_empties", text="Delete Empties")
         layout.prop(self, "clear_armature", text="Delete Armature")
 
-    def invoke_bake(self, context, event, act=None):        
+    def invoke_bake(self, context, event, act=None):
         scn = context.scene
         if not act:
             if scn.eb_current_empty_action != "":
@@ -95,26 +95,26 @@ class EB_OPS_():
         if act:
             self.frame_start = act.frame_range[0]
             self.frame_end = act.frame_range[1]
-            
+
         # Open dialog
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
 
-    def execute_bake(self, context):   
+    def execute_bake(self, context):
         if not context.scene.eb_source_object:
             scn.eb_source_object = context.active_object
 
         use_global_undo = context.preferences.edit.use_global_undo
         context.preferences.edit.use_global_undo = False
         empties_list = []
-        try:           
+        try:
             if self.bake_type == "STATIC":
                 self.frame_start = context.scene.frame_current
                 self.frame_end = context.scene.frame_current
-            
+
             # Bake
             bake_anim(self, frame_start=self.frame_start, frame_end=self.frame_end, only_selected=False, bake_bones=True, bake_object=False, clear_constraints=True)
-            
+
             # remove NOROT bones
             bpy.ops.object.mode_set(mode='EDIT')
             for ebone in bpy.context.active_object.data.edit_bones:
@@ -128,14 +128,14 @@ class EB_OPS_():
                 for emp_name in empties_list:
                     emp = bpy.data.objects.get(emp_name)
                     if not emp:
-                        continue                        
+                        continue
                     if emp.animation_data and emp.animation_data.action:
                         emp.animation_data.action.use_fake_user = False
                         bpy.data.actions.remove(emp.animation_data.action)
-                    bpy.data.objects.remove(emp, do_unlink=True)  
+                    bpy.data.objects.remove(emp, do_unlink=True)
 
                 tricky_bones = ["Root", "CG", "root", "ROOT"]
-                for tricky_bone in tricky_bones:                    
+                for tricky_bone in tricky_bones:
                     root = bpy.data.objects.get(tricky_bone)
                     if root:
                         if root.animation_data and root.animation_data.action:
@@ -145,12 +145,12 @@ class EB_OPS_():
 
             if self.clear_armature:
                 ar = bpy.context.active_object
-                bpy.data.objects.remove(ar, do_unlink=True)  
-                
+                bpy.data.objects.remove(ar, do_unlink=True)
+
             cspy.data.purge_unused()
             if bpy.context.mode != 'OBJECT':
                 bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-            
+
         #except Exception as inst:
         #    print(inst)
         finally:
@@ -195,7 +195,7 @@ class BE_OT_deconstruct_armature(OPS_, EB_OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return cls.poll_deconstruct(context);   
+        return cls.poll_deconstruct(context);
 
     def do_execute(self, context):
         return self.execute_deconstruct(context)
@@ -203,36 +203,36 @@ class BE_OT_deconstruct_armature(OPS_, EB_OPS_, Operator):
 class EB_OT_bake_anim(EB_OPS_BAKE, EB_OPS_, OPS_DIALOG, Operator):
     """Bake bones animation"""
     bl_idname = "eb.bake_anim"
-    bl_label = "Complete Armature"    
-    
+    bl_label = "Complete Armature"
+
     @classmethod
     def do_poll(cls, context):
         return cls.poll_bake(context)
-            
+
     def invoke(self, context, event):
         return self.invoke_bake(context, event)
-        
+
     def do_draw(self, context, scene, layout, obj):
         self.draw_bake(context)
-        
+
     def do_execute(self, context):
         return self.execute_bake(context)
 
 class EB_OT_deconstruct_duplicate_bake(EB_OPS_BAKE, EB_OPS_, OPS_DIALOG, Operator):
     """Deconstruct the armature, create empties, duplicate armature, bake"""
     bl_idname = "eb.deconstruct_duplicate_bake"
-    bl_label = "Deconstruct Duplicate Bake"    
-    
+    bl_label = "Deconstruct Duplicate Bake"
+
     @classmethod
     def do_poll(cls, context):
         return cls.poll_deconstruct(context)
-            
+
     def invoke(self, context, event):
         return self.invoke_bake(context, event, context.active_object.animation_data.action)
-        
+
     def do_draw(self, context, scene, layout, obj):
         self.draw_bake(context)
-        
+
     def do_execute(self, context):
         self.execute_deconstruct(context)
         self.execute_duplicate(context)
@@ -241,52 +241,52 @@ class EB_OT_deconstruct_duplicate_bake(EB_OPS_BAKE, EB_OPS_, OPS_DIALOG, Operato
 class EB_OT_create_bake(EB_OPS_BAKE, EB_OPS_, OPS_DIALOG, Operator):
     """Create the armature and bake the animations"""
     bl_idname = "eb.create_bake"
-    bl_label = "Create Bake"    
-    
+    bl_label = "Create Bake"
+
     @classmethod
     def do_poll(cls, context):
         return cls.poll_create(context)
-            
+
     def invoke(self, context, event):
         return self.invoke_bake(context, event)
-        
+
     def do_draw(self, context, scene, layout, obj):
         self.draw_bake(context)
-        
+
     def do_execute(self, context):
-        self.execute_create(context) 
+        self.execute_create(context)
         return self.execute_bake(context)
 
 class EB_OT_duplicate_bake(EB_OPS_BAKE, EB_OPS_, OPS_DIALOG, Operator):
     """Duplicate the armature and bake the animations"""
     bl_idname = "eb.duplicate_bake"
     bl_label = "Duplicate Bake"
-    
+
     @classmethod
     def do_poll(cls, context):
         return cls.poll_duplicate(context) and cls.poll_bake(context)
-            
+
     def invoke(self, context, event):
         return self.invoke_bake(context, event)
-        
+
     def do_draw(self, context, scene, layout, obj):
         self.draw_bake(context)
-        
+
     def do_execute(self, context):
-        self.execute_duplicate(context) 
+        self.execute_duplicate(context)
         return self.execute_bake(context)
 
-class EB_OT_process_batch(OPS_, EB_OPS_, EB_OPS_BAKE):
+class EB_OT_process_batch(EB_OPS_BAKE, EB_OPS_, OPS_, Operator):
     """Batch processing"""
     bl_idname = 'eb.eb_ot_process_batch'
     bl_label = "Batch Processing"
-    
+
     @classmethod
     def do_poll(cls, context):
         scene = context.scene
-        return ((scene.eb_target_type == 'FILE' and scene.eb_target_file != '') or 
+        return ((scene.eb_target_type == 'FILE' and scene.eb_target_file != '') or
             (scene.eb_target_type == 'DIR' and scene.eb_target_dir != ''))
-        
+
     def do_execute(self, context):
         scene = context.scene
         original_active_object = context.active_object
@@ -313,22 +313,22 @@ class EB_OT_process_batch(OPS_, EB_OPS_, EB_OPS_BAKE):
             scene.eb_target_action_name = filename
 
             cspy.imports.import_fbx(filepath=f, automatic_bone_orientation=True)
-            
+
             for obj in bpy.context.selected_objects:
                 if obj.name == 'Root':
                     bpy.data.objects.remove(obj)
                     continue
                 if obj and not obj.parent:
-                    scene.eb_source_object = obj            
-            
+                    scene.eb_source_object = obj
+
             obj = scene.eb_source_object
 
             self.frame_start = obj.animation_data.action.frame_range[0]
             self.frame_end = obj.animation_data.action.frame_range[1]
 
-            if obj.type == 'ARMATURE':                
+            if obj.type == 'ARMATURE':
                 self.execute_deconstruct(context)
-                
+
             self.execute_duplicate(context)
             self.execute_bake(context)
 

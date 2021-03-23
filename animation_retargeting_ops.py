@@ -15,33 +15,33 @@ class AR_OPS_:
         return obj, anim_ret, anim_ret_bone_cache, anim_ret_constraints_cache
 
     @classmethod
-    def poll_update(cls, context):       
+    def poll_update(cls, context):
         if context.active_object.anim_ret.is_frozen:
-            return False         
-        obj, ar, arbc, arcc = cls.get_cache_data(context)        
+            return False
+        obj, ar, arbc, arcc = cls.get_cache_data(context)
         return obj and ar and arbc and arcc and (len(arbc) > 0 or len(arcc) > 0)
-    
+
     @classmethod
-    def poll_debug(cls, context):  
+    def poll_debug(cls, context):
         if context.active_object.anim_ret.is_frozen:
-            return False              
-        obj, ar, arbc, arcc = cls.get_cache_data(context)        
+            return False
+        obj, ar, arbc, arcc = cls.get_cache_data(context)
         return obj and ar and ((arbc and len(arbc) > 0) or (arcc and len(arcc) > 0))
-    
+
     @classmethod
-    def poll_clear(cls, context):     
+    def poll_clear(cls, context):
         if context.active_object.anim_ret.is_frozen:
-            return False           
-        obj, ar, arbc, arcc = cls.get_cache_data(context)        
+            return False
+        obj, ar, arbc, arcc = cls.get_cache_data(context)
         return obj and ar and ((arbc and len(arbc) > 0) or (arcc and len(arcc) > 0))
-    
+
     @classmethod
-    def poll_restore(cls, context): 
+    def poll_restore(cls, context):
         if context.active_object.anim_ret.is_frozen:
-            return False               
-        obj, ar, arbc, arcc = cls.get_cache_data(context)        
+            return False
+        obj, ar, arbc, arcc = cls.get_cache_data(context)
         return obj and ar and arbc and arcc and (len(arbc) > 0 or len(arcc) > 0)
-    
+
     @classmethod
     def debug_cache(cls, context):
         obj, ar, arbc, arcc = cls.get_cache_data(context)
@@ -49,7 +49,7 @@ class AR_OPS_:
             print('{0} >> {1}'.format(bone.bone_name, bone.source_bone_name))
         for constraint in arcc:
             print('{0} >> {1}'.format(constraint.bone_name, constraint.constraint_type))
-    
+
     @classmethod
     def clear_cache(cls, context):
         obj, ar, arbc, arcc = cls.get_cache_data(context)
@@ -57,14 +57,14 @@ class AR_OPS_:
         arcc.clear()
 
     @classmethod
-    def cache_bone(cls, context, bone_name):        
-        obj, ar, arbc, arcc = cls.get_cache_data(context)        
+    def cache_bone(cls, context, bone_name):
+        obj, ar, arbc, arcc = cls.get_cache_data(context)
         pbone = obj.pose.bones[bone_name]
         anim_ret_bone = pbone.anim_ret_bone
 
         if anim_ret_bone.source_bone_name == '':
             return
-        
+
         anim_ret_bone.target_bone_name = bone_name
         new_bone = arbc.add()
         new_bone.cache_from(anim_ret_bone)
@@ -73,27 +73,27 @@ class AR_OPS_:
             anim_ret_constraint.target_bone_name = bone_name
             new_constraint = arcc.add()
             new_constraint.cache_from(anim_ret_constraint)
-    
+
     @classmethod
     def refresh_cache(cls, context):
         cls.clear_cache(context)
-        
+
         obj, ar, arbc, arcc = cls.get_cache_data(context)
 
         for bone in obj.data.bones:
             cls.cache_bone(context, bone.name)
 
     @classmethod
-    def restore_bone(cls, context, cached_bone):        
-        obj, ar, arbc, arcc = cls.get_cache_data(context)        
+    def restore_bone(cls, context, cached_bone):
+        obj, ar, arbc, arcc = cls.get_cache_data(context)
         pbone = obj.pose.bones[cached_bone.bone_name]
 
-        anim_ret_bone = pbone.anim_ret_bone        
+        anim_ret_bone = pbone.anim_ret_bone
         anim_ret_bone.restore_from(cached_bone)
 
     @classmethod
     def restore_constraint(cls, context, cached_constraint):
-        obj, ar, arbc, arcc = cls.get_cache_data(context)        
+        obj, ar, arbc, arcc = cls.get_cache_data(context)
         pbone = obj.pose.bones[cached_constraint.bone_name]
 
         new_constraint = pbone.anim_ret_constraints.add()
@@ -107,7 +107,7 @@ class AR_OPS_:
         return 'Cache contains {0} bones and {1} constraints.'.format(bone_count, constraint_count)
 
     @classmethod
-    def refresh_constraints(cls, context):        
+    def refresh_constraints(cls, context):
         frame = bpy.context.scene.frame_current
         bpy.context.scene.frame_set(0)
 
@@ -123,14 +123,14 @@ class AR_OPS_:
         anim_ret_bone.check_bone(context)
 
         bpy.context.scene.frame_set(frame)
-    
+
     @classmethod
     def synchronize_bones(cls, context):
         frame = bpy.context.scene.frame_current
         bpy.context.scene.frame_set(0)
 
         obj = context.active_object
-        anim_ret = obj.anim_ret        
+        anim_ret = obj.anim_ret
         source_armature = anim_ret.source
 
         bones = obj.data.bones
@@ -142,24 +142,24 @@ class AR_OPS_:
             pbone = obj.pose.bones[bone_name]
             anim_ret_bone = pbone.anim_ret_bone
             anim_ret_bone.bone_name = bone_name
-            
+
             use_offset_bone = False
             for constraint in pbone.anim_ret_constraints:
                 use_offset_bone = use_offset_bone or constraint.use_offset_bone
                 constraint.bone_name = bone_name
-                
+
             source_armature = anim_ret.source
             ObjectAnimRet.update_offset_bones(obj, bone_name, source_armature, anim_ret_bone.source_bone_name, use_offset_bone)
 
         bpy.context.scene.frame_set(frame)
 
     @classmethod
-    def refresh_bones(cls, context):        
+    def refresh_bones(cls, context):
         frame = bpy.context.scene.frame_current
         bpy.context.scene.frame_set(0)
 
         obj = context.active_object
-        anim_ret = obj.anim_ret        
+        anim_ret = obj.anim_ret
         source_armature = anim_ret.source
 
         bones = obj.data.bones
@@ -180,7 +180,7 @@ class AR_OPS_:
         bpy.context.scene.frame_set(frame)
 
 class AR_OPS_Create_New_Constraint(AR_OPS_):
-    
+
     @classmethod
     def do_poll(cls, context):
         return POLL.ANIM_RET_IS_NOT_FROZEN(context)
@@ -190,14 +190,14 @@ class AR_OPS_Create_New_Constraint(AR_OPS_):
         if not obj:
             return {'FINISHED'}
         anim_ret = obj.anim_ret
-        if anim_ret and anim_ret.is_frozen:        
+        if anim_ret and anim_ret.is_frozen:
             return {'FINISHED'}
 
         bone = get_active_pose_bone(context)
         if bone is None:
             bone_name = anim_ret.get_active_bone_name(context)
             bone = obj.pose.bones[bone_name]
-        if bone is None:     
+        if bone is None:
             return {'FINISHED'}
 
         anim_ret_bone = bone.anim_ret_bone
@@ -209,7 +209,7 @@ class AR_OPS_Create_New_Constraint(AR_OPS_):
         self.initialize(context, new_anim_ret_constraint)
 
         self.report({'INFO'}, '{0} constraint added to bone {1}.'.format(self.constraint_type, bone.name))
-        
+
         return {'FINISHED'}
 
     def initialize(self, context, new_anim_ret_constraint):
@@ -333,7 +333,7 @@ class AR_Create_New_Constraint_SHRINKWRAP(AR_OPS_Create_New_Constraint, Operator
 class AR_Refresh_Constraints(OPS_, AR_OPS_, Operator):
     bl_idname = 'ops.ar_refresh_constraints'
     bl_label = 'Refresh the bones constraints'
-    
+
     @classmethod
     def do_poll(cls, context):
         if context.active_object.anim_ret.is_frozen:
@@ -343,13 +343,13 @@ class AR_Refresh_Constraints(OPS_, AR_OPS_, Operator):
     def do_execute(self, context):
         cls = AR_OPS_
         cls.refresh_constraints(context)
-        self.report({'INFO'}, '[{0}] constraints refreshed.'.format(get_active_pose_bone(context).name))        
+        self.report({'INFO'}, '[{0}] constraints refreshed.'.format(get_active_pose_bone(context).name))
         return {'FINISHED'}
 
 class AR_Synchronize_Bones(OPS_, AR_OPS_, Operator):
     bl_idname = 'ops.ar_synchronize_bones'
     bl_label = 'Synchronize the bones constraint names.'
-    
+
     @classmethod
     def do_poll(cls, context):
         if context.active_object.anim_ret.is_frozen:
@@ -359,13 +359,13 @@ class AR_Synchronize_Bones(OPS_, AR_OPS_, Operator):
     def do_execute(self, context):
         cls = AR_OPS_
         cls.synchronize_bones(context)
-        self.report({'INFO'}, 'Bones synchronized.')        
+        self.report({'INFO'}, 'Bones synchronized.')
         return {'FINISHED'}
 
 class AR_Refresh_Bones(OPS_, AR_OPS_, Operator):
     bl_idname = 'ops.ar_refresh_bones'
     bl_label = 'Refresh all bone data.'
-    
+
     @classmethod
     def do_poll(cls, context):
         if context.active_object.anim_ret.is_frozen:
@@ -375,14 +375,14 @@ class AR_Refresh_Bones(OPS_, AR_OPS_, Operator):
     def do_execute(self, context):
         cls = AR_OPS_
         cls.refresh_bones(context)
-        self.report({'INFO'}, 'Bones refreshed.')        
+        self.report({'INFO'}, 'Bones refreshed.')
         return {'FINISHED'}
 
 class AR_Update_Cache(OPS_, AR_OPS_, Operator):
     """Updates the cache with the current bone and constraint data."""
     bl_idname = 'ops.ar_update_cache'
     bl_label = 'Update'
-    
+
     @classmethod
     def do_poll(cls, context):
         return cls.poll_update
@@ -397,7 +397,7 @@ class AR_Clear_Cache(OPS_, AR_OPS_, Operator):
     """Clears the cache back to its original state."""
     bl_idname = 'ops.ar_clear_cache'
     bl_label = 'Clear'
-    
+
     @classmethod
     def do_poll(cls, context):
         return cls.poll_clear
@@ -412,7 +412,7 @@ class AR_Debug_Cache(OPS_, AR_OPS_, Operator):
     """Shows debug data for a cache."""
     bl_idname = 'ops.ar_debug_cache'
     bl_label = 'Debug'
-    
+
     @classmethod
     def do_poll(cls, context):
         return cls.poll_debug
@@ -420,7 +420,7 @@ class AR_Debug_Cache(OPS_, AR_OPS_, Operator):
     def do_execute(self, context):
         cls = AR_OPS_
         cls.debug_cache(context)
-            
+
         self.report({'INFO'}, cls.get_cache_status(context))
         return {'FINISHED'}
 
@@ -428,22 +428,22 @@ class AR_Restore_Cache(OPS_, AR_OPS_, Operator):
     """Restores the cache by applying its bones and constraints to this armature."""
     bl_idname = 'ops.ar_restore_cache'
     bl_label = 'Restore'
-    
+
     @classmethod
     def do_poll(cls, context):
         return cls.poll_debug
 
     def do_execute(self, context):
         cls = AR_OPS_
-            
-        obj, ar, arbc, arcc = cls.get_cache_data(context)  
+
+        obj, ar, arbc, arcc = cls.get_cache_data(context)
 
         for bone in arbc:
             cls.restore_bone(context, bone)
 
         for constraint in arcc:
             cls.restore_constraint(context, constraint)
-        
+
         cls.refresh_bones(context)
         self.report({'INFO'}, cls.get_cache_status(context))
         return {'FINISHED'}

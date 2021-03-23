@@ -2,7 +2,7 @@ import bpy, cspy
 from bpy.types import Operator
 
 
-class OPS_OPTION:    
+class OPS_OPTION:
     '''Register, Display in the info window and support the redo toolbar panel.'''
     REGISTER = 'REGISTER'
 
@@ -41,7 +41,7 @@ class OPS_(Operator):
     bl_options = OPS_OPTIONS.UNDO_REGISTER
     bl_label = 'Label'
     bl_idname = 'ops.base_op'
-    
+
     @classmethod
     def poll(cls, context):
         try:
@@ -49,7 +49,7 @@ class OPS_(Operator):
         except Exception as inst:
             print('{0}:  [do_poll]  {1}'.format(cspy.utils.get_logging_name(cls), inst))
             return False
-    
+
     @classmethod
     def do_poll(cls, context):
         return True
@@ -60,10 +60,10 @@ class OPS_(Operator):
     def cancelled(self):
         return {'CANCELLED'}
 
-    def quit(self, context, active, mode):        
+    def quit(self, context, active, mode):
         cspy.utils.exit_mode(active, mode)
         return {'FINISHED'}
-            
+
     def execute(self, context):
         returning = self.finished()
 
@@ -81,20 +81,20 @@ class OPS_(Operator):
             context.preferences.edit.use_global_undo = use_global_undo
 
         return returning
-    
+
 
 class OPS_DIALOG(OPS_):
 
-    def do_draw(self, context, scene, layout, obj):        
-        layout = self.layout        
-        
+    def do_draw(self, context, scene, layout, obj):
+        layout = self.layout
+
         d = dir(self.properties)
         for attr in d:
             if attr == 'rna_type' or attr.startswith('bl_') or attr.startswith('_'):
                 continue
             layout.prop(self, attr)
 
-    def invoke(self, context, event):        
+    def invoke(self, context, event):
         scn = context.scene
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
@@ -109,7 +109,7 @@ class OPS_MODAL(OPS_):
 
     def running_modal(self):
         return {'RUNNING_MODAL'}
-        
+
     def execute(self, context):
         return self.finished()
 
@@ -122,19 +122,19 @@ class OPS_MODAL(OPS_):
             return self.cancelled()
 
         try:
-            if self.do_continue(context, event):                
-                try: 
+            if self.do_continue(context, event):
+                try:
                     self.do_iteration(context, event)
                 except Exception as inst:
                     print('{0}:  [do_iteration]  {1}'.format(cspy.utils.get_logging_name(self), inst))
                     return self.cancelled()
-                
-                return self.running_modal()              
+
+                return self.running_modal()
         except Exception as inst:
             print('{0}:  [do_continue]  {1}'.format(cspy.utils.get_logging_name(self), inst))
             return self.cancelled()
-            
-        try: 
+
+        try:
             self.do_end(context, event)
         except Exception as inst:
             print('{0}:  [do_end]  {1}'.format(cspy.utils.get_logging_name(self), inst))
@@ -146,7 +146,7 @@ class OPS_MODAL(OPS_):
         self.do_start(context, event)
         context.window_manager.modal_handler_add(self)
         return self.running_modal()
-    
+
     def do_cancel(self, context, event):
         c = False
         return c
@@ -156,7 +156,7 @@ class OPS_MODAL(OPS_):
 
     def do_iteration(self, context, event):
         pass
-    
+
     def do_start(self, context, event):
         pass
 

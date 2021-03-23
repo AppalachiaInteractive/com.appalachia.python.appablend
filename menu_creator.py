@@ -39,26 +39,26 @@ mc_icon_list = [
 # Update functions for settings
 # Function to avoid edit mode and fixed object while exiting edit mode
 def mc_ms_editmode_update(self, context):
-    
+
     if not self.ms_editmode:
         for obj in bpy.data.objects:
             obj.mc_edit_enable = False
-    
+
     # context.scene.mc_settings.em_fixobj = False
-    
+
     return
 
 # Function to save the fixed object pointer to be used until the object is released
 def mc_em_fixobj_update(self, context):
-    
+
     if self.em_fixobj:
         self.em_fixobj_pointer = context.active_object
-    
+
     return
 
 # Class with all the settings variables
 class MC_Settings(bpy.types.PropertyGroup):
-    
+
     # Main Settings definitions
     ms_editmode: bpy.props.BoolProperty(name="Enable Edit Mode Tools",
                                         description="Unlock tools to customize the menu.\nDisable when the Menu is complete",
@@ -70,7 +70,7 @@ class MC_Settings(bpy.types.PropertyGroup):
     ms_debug: bpy.props.BoolProperty(name="Debug mode",
                                         description="Unlock debug mode.\nMore messaged will be generated in the console.\nEnable it only if you encounter problems, as it might degrade general Blender performance",
                                         default=False)
-    
+
     # Menu Specific properties
     mss_name: bpy.props.StringProperty(name="Name",
                                         description="Name of the menu.\nChoose the name of the menu to be shown before the properties",
@@ -85,7 +85,7 @@ class MC_Settings(bpy.types.PropertyGroup):
     mss_path_replace_new: bpy.props.StringProperty(name="Replace New",
                                         description="Replace with...",
                                         default='')
-        
+
     # Edit mode properties
     em_fixobj: bpy.props.BoolProperty(name="Pin Object",
                                         description="Pin the Object you are using to edit the menu.\nThe object you pin will be considered as the target of all properties addition, and only this Object menu will be shown",
@@ -99,19 +99,19 @@ class MCCollectionItem(bpy.types.PropertyGroup):
 
 # Function to create an array of tuples for enum collections
 def mc_collections_list(self, context):
-    
+
     items = []
-    
+
     i = 0
     for el in self.collections:
         items.append( (el.collection.name,el.collection.name,el.collection.name) )
         i = i + 1
-        
+
     return items
 
 # Function to update global collection properties
 def mc_collections_list_update(self, context):
-    
+
     for collection in self.collections:
         if collection.collection.name == self.collections_list:
             collection.collection.hide_viewport = False
@@ -121,16 +121,16 @@ def mc_collections_list_update(self, context):
             collection.collection.hide_render = True
 
 def mc_collections_global_options_update(self, context):
-    
+
     items = []
-    
+
     i = 0
     for el in self.collections:
         for obj in el.collection.objects:
-            
+
             if obj.type == "MESH":
                 obj.data.use_auto_smooth = self.collections_global_normalautosmooth
-            
+
             for modifier in obj.modifiers:
                 if modifier.type == "CORRECTIVE_SMOOTH":
                     modifier.show_viewport = self.collections_global_smoothcorrection
@@ -141,7 +141,7 @@ def mc_collections_global_options_update(self, context):
                 elif modifier.type == "SHRINKWRAP":
                     modifier.show_viewport = self.collections_global_shrinkwrap
                     modifier.show_render = self.collections_global_shrinkwrap
-    
+
     if self.outfit_enable:
         for modifier in self.outfit_body.modifiers:
             if modifier.type == "MASK":
@@ -154,7 +154,7 @@ def mc_collections_global_options_update(self, context):
                             if obj.name in modifier.name and not obj.hide_viewport:
                                 modifier.show_viewport = True
                                 modifier.show_render = True
-        
+
     return
 
 # Poll function for the selection of mesh only in pointer properties
@@ -168,7 +168,7 @@ class MCSectionItem(bpy.types.PropertyGroup):
     name : bpy.props.StringProperty(name="Section Name")
     icon : bpy.props.StringProperty(name="Section Icon", default="")
     type : bpy.props.StringProperty(name="Section Type", default="DEFAULT")
-    
+
     # COLLECTION type options
     collections_enable_global_smoothcorrection: bpy.props.BoolProperty(default=False)
     collections_enable_global_shrinkwrap: bpy.props.BoolProperty(default=False)
@@ -210,7 +210,7 @@ def mc_remove_property_item(collection, item):
             break
     if i>=0:
         collection.remove(i)
-    
+
     return i>=0
 
 # Function to add a specific property to the collection, if not already there
@@ -226,7 +226,7 @@ def mc_add_property_item(collection, item):
         add_item.name = item[0]
         add_item.path = item[1]
         add_item.id = item[2]
-    
+
     return i
 
 # Function to find the index of a property
@@ -257,27 +257,27 @@ def mc_print_properties():
 
 # Function to create an array of tuples for enum properties
 def mc_section_list(scene, context):
-    
+
     settings = bpy.context.scene.mc_settings
     if settings.em_fixobj:
         obj = settings.em_fixobj_pointer
     else:
         obj = context.active_object
-    
+
     items = []
-    
+
     i = 0
     for el in obj.mc_sections:
         if el.type == "DEFAULT":
             items.append( (el.name,el.name,el.name,el.icon,i) )
             i = i + 1
-        
+
     return items
 
 # Function to clean sections of a single object
 def mc_clean_single_sections(obj):
     obj.mc_sections.clear()
-    
+
 # Function to clean the sections of every object
 def mc_clean_sections():
     for obj in bpy.data.objects:
@@ -308,13 +308,13 @@ def mc_sec_ID(elem):
 # ---- Sections and properties functions
 
 # Function to find the length of a collection
-def mc_len_collection(collection):    
+def mc_len_collection(collection):
     i=0
     for el in collection:
         i=i+1
     return i
 
-def menu_func(self, context):    
+def menu_func(self, context):
     if hasattr(context, 'button_prop'):
             layout = self.layout
             layout.separator()

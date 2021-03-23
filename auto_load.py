@@ -27,8 +27,8 @@ def init():
 
 def register():
     print('Registering classes.')
-    for cls in ordered_classes:        
-        try:            
+    for cls in ordered_classes:
+        try:
             bpy.utils.register_class(cls)
         except:
             print('Issue registering class {0}'.format(cls))
@@ -39,21 +39,21 @@ def register():
     for module in modules:
         if module.__name__ == __name__:
             continue
-        try:            
+        try:
             if hasattr(module, "register"):
                 module.register()
         except:
             print('Issue registering module {0}'.format(module))
             raise
-        
+
 def unregister():
     print('Unregistering classes.')
     for cls in reversed(ordered_classes):
         try:
             bpy.utils.unregister_class(cls)
         except:
-            print('Issue unregistering class {0}'.format(cls))            
-        
+            print('Issue unregistering class {0}'.format(cls))
+
     print('Unregistering modules.')
 
     for module in modules:
@@ -167,7 +167,12 @@ def toposort(deps_dict):
     sorted_values = set()
     while len(deps_dict) > 0:
         unsorted = []
-        for value, deps in deps_dict.items():
+        def sort_item(i):
+            return i[0].__name__
+
+        items = sorted(deps_dict.items(), key=sort_item)
+
+        for value, deps in items:
             if len(deps) == 0:
                 sorted_list.append(value)
                 sorted_values.add(value)

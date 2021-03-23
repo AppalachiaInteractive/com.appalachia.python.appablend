@@ -27,7 +27,7 @@ def get_nla_track(obj):
     for track in tracks:
         if track.select:
             return track
-            
+
     return tracks[0]
 
 
@@ -39,7 +39,7 @@ def add_bind_pose_for_strip_population(context, track, padding = 5):
         first = firsts[0]
         track.strips.new(first.name, start, first)
         start += first.frame_range[1] + padding
-    
+
     return start, first
 
 def clear_nla_track(track):
