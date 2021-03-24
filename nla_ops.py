@@ -74,8 +74,8 @@ class NLA_OT_strips_from_text(OPS_, Operator):
             strip = track.strips.new(metadata.clip_name, start, action)
             strip.name = metadata.clip_name
 
-            strip.action_frame_start = metadata.start_frame
-            strip.action_frame_end =  metadata.stop_frame
+            strip.action_frame_start = metadata.frame_start
+            strip.action_frame_end =  metadata.frame_end
             strip.frame_end = strip.frame_start + (strip.action_frame_end - strip.action_frame_start)
             strip.use_animated_time_cyclic = loop_time
 
@@ -88,8 +88,8 @@ class NLA_OT_strips_from_text(OPS_, Operator):
                 if not fcurve:
                     fcurve = action.fcurves.new(data_path, index=-1, action_group=group_name)
 
-                s = metadata.start_frame
-                e = metadata.stop_frame+1
+                s = metadata.frame_start
+                e = metadata.frame_end+1
                 for frame in range(s, e):
                     value = getattr(metadata, data_path)
 

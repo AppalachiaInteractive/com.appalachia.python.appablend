@@ -61,6 +61,10 @@ class POLL:
         return POLL.active_object_animation_data(context) and context.active_object.animation_data.action is not None
 
     @classmethod
+    def active_object_unity_clips(cls, context):
+        return POLL.active_object_action(context) and context.active_object.animation_data.action.unity_clips and len(context.active_object.animation_data.action.unity_clips) > 0
+
+    @classmethod
     def active_ARMATURE(cls, context):
         return POLL.active_object_type(context, OBJECT_TYPES.ARMATURE)
 

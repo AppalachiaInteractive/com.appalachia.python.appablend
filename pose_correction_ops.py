@@ -62,20 +62,36 @@ class PC_OT_record_reference_scale_from_bone(PC_OP, OPS_, Operator):
         pose_correction.reference_scale_frame = context.scene.frame_current
         return {'FINISHED'}
 
-class PC_OT_PC:
-    @classmethod
-    def do_poll(cls, context):
-        return (POLL.mode_POSE(context))
+class PC_OT_correct_pose_location(OPS_, Operator):
+    bl_idname = "pc.correct_pose_location"
+    bl_label = "Correct Pose"
 
-class PC_OT_correct_pose_BASE(PC_OT_PC, OPS_):
+    forward: bpy.props.BoolProperty(name='Forward')
+    advance: bpy.props.BoolProperty(name='Advance')
+    loop: bpy.props.BoolProperty(name='Loop')
+
     @classmethod
     def do_poll(cls, context):
-        return (
-                POLL.mode_POSE(context) and
+        first = (POLL.mode_POSE(context) and
                 POLL.active_pose_bone(context) and
                 context.scene.frame_current > context.scene.frame_start and
-                context.scene.frame_current < context.scene.frame_end
-            )
+                context.scene.frame_current < context.scene.frame_end)
+
+        if not first:
+            return False
+            
+        pc = context.active_pose_bone.pose_correction
+        return pc.get_poll_valid(context)
+
+    def do_apply(self, context, arm, bone, pose_correction):
+        changed_bones = pose_correction.correct_pose_location(context, arm, bone)
+
+        for b in changed_bones:
+            path = get_bone_data_path(b, 'location')
+
+            f = context.scene.frame_current
+            for i in range(3):
+                arm.keyframe_insert(path, index=i, frame=f)
 
     """Correct a pose bone using the reference"""
     def do_execute(self, context):
@@ -83,195 +99,23 @@ class PC_OT_correct_pose_BASE(PC_OT_PC, OPS_):
         bone = context.active_pose_bone
         pose_correction = bone.pose_correction
         pose_correction.bone_name = bone.name
+        scene = context.scene
 
-        self.do_apply(context, arm, bone, pose_correction)
+        if self.loop:                
+            while self.do_poll(context):            
+                self.do_apply(context, arm, bone, pose_correction)
 
-        self.do_finish(context)
+                if self.forward:
+                    scene.frame_set(scene.frame_current + 1)
+                else:   
+                    scene.frame_set(scene.frame_current - 1)
+        else:
+            self.do_apply(context, arm, bone, pose_correction)
+            
+            if self.advance:
+                if self.forward:
+                    scene.frame_set(scene.frame_current + 1)
+                else:   
+                    scene.frame_set(scene.frame_current - 1)
+
         return {'FINISHED'}
-
-class PC_OT_correct_pose_location_BASE(PC_OT_correct_pose_BASE):
-    def do_apply(self, context, arm, bone, pose_correction):
-        control_bone = arm.pose.bones[pose_correction.location_handle_bone_name]
-
-        if correct_pose_location(context, arm, bone):
-            path = get_bone_data_path(control_bone.name, 'location')
-
-            f = context.scene.frame_current
-            for i in range(3):
-                arm.keyframe_insert(path, index=i, frame=f)
-
-class PC_OT_correct_pose_rotation_BASE(PC_OT_correct_pose_BASE):
-    def do_apply(self, context, arm, bone, pose_correction):
-        if correct_pose_rotation(context, arm, bone):
-            path = get_bone_data_path(bone.name, 'rotation_quaternion')
-
-            f = context.scene.frame_current
-            for i in range(4):
-                arm.keyframe_insert(path, index=i, frame=f)
-
-class PC_OT_correct_pose_scale_BASE(PC_OT_correct_pose_BASE):
-    def do_apply(self, context, arm, bone, pose_correction):
-        if correct_pose_scale(context, arm, bone):
-            path = get_bone_data_path(bone.name, 'scale')
-
-            f = context.scene.frame_current
-            for i in range(3):
-                arm.keyframe_insert(path, index=i, frame=f)
-
-class PC_OT_correct_pose_location(PC_OT_correct_pose_location_BASE, Operator):
-    bl_idname = "pc.correct_pose_location"
-    bl_label = "Correct Pose"
-
-    def do_finish(self, context):
-        pass
-
-class PC_OT_correct_pose_location_prev(PC_OT_correct_pose_location_BASE, PC_OT_PC, OPS_, Operator):
-    bl_idname = "pc.correct_pose_location_prev"
-    bl_label = "Correct Pose"
-
-    def do_finish(self, context):
-        context.scene.frame_current -= 1
-
-class PC_OT_correct_pose_location_next(PC_OT_correct_pose_location_BASE, PC_OT_PC, OPS_, Operator):
-    bl_idname = "pc.correct_pose_location_next"
-    bl_label = "Correct Pose"
-
-    def do_finish(self, context):
-        context.scene.frame_current += 1
-
-
-class PC_OT_correct_pose_rotation(PC_OT_correct_pose_rotation_BASE, Operator):
-    bl_idname = "pc.correct_pose_rotation"
-    bl_label = "Correct Pose"
-
-    def do_finish(self, context):
-        pass
-
-class PC_OT_correct_pose_rotation_prev(PC_OT_correct_pose_rotation_BASE, PC_OT_PC, OPS_, Operator):
-    bl_idname = "pc.correct_pose_rotation_prev"
-    bl_label = "Correct Pose"
-
-    def do_finish(self, context):
-        context.scene.frame_current -= 1
-
-class PC_OT_correct_pose_rotation_next(PC_OT_correct_pose_rotation_BASE, PC_OT_PC, OPS_, Operator):
-    bl_idname = "pc.correct_pose_rotation_next"
-    bl_label = "Correct Pose"
-
-    def do_finish(self, context):
-        context.scene.frame_current += 1
-
-class PC_OT_correct_pose_scale(PC_OT_correct_pose_scale_BASE, Operator):
-    bl_idname = "pc.correct_pose_scale"
-    bl_label = "Correct Pose"
-
-    def do_finish(self, context):
-        pass
-
-class PC_OT_correct_pose_scale_prev(PC_OT_correct_pose_scale_BASE, PC_OT_PC, OPS_, Operator):
-    bl_idname = "pc.correct_pose_scale_prev"
-    bl_label = "Correct Pose"
-
-    def do_finish(self, context):
-        context.scene.frame_current -= 1
-
-class PC_OT_correct_pose_scale_next(PC_OT_correct_pose_scale_BASE, PC_OT_PC, OPS_, Operator):
-    bl_idname = "pc.correct_pose_scale_next"
-    bl_label = "Correct Pose"
-
-    def do_finish(self, context):
-        context.scene.frame_current += 1
-
-class PC_OT_correct_pose_clip_location(PC_OT_PC, OPS_MODAL, Operator):
-    """Correct all prepared pose bones locations using the first frame in the clip"""
-    bl_idname = "pc.correct_pose_clip_location"
-    bl_label = "Correct Pose (Full Clip)"
-
-    def do_start(self, context, event):
-        context.scene.frame_current = context.scene.frame_start
-
-    def do_continue(self, context, event):
-        return context.scene.frame_current < context.scene.frame_end
-
-    def do_iteration(self, context, event):
-        arm = context.active_object
-
-        for bone in arm.pose.bones:
-            pose_correction = bone.pose_correction
-            pose_correction.bone_name = bone.name
-            control_bone = arm.pose.bones[pose_correction.location_handle_bone_name]
-
-            if context.scene.frame_current == context.scene.frame_start:
-                pose_correction.reference_location = pose_correction.get_location()
-                continue
-
-            if correct_pose_location(context, arm, bone):
-                path = get_bone_data_path(control_bone.name, 'location')
-
-                f = context.scene.frame_current
-                for i in range(3):
-                    arm.keyframe_insert(path, index=i, frame=f)
-
-        context.scene.frame_current += 1
-
-class PC_OT_correct_pose_clip_rotation(PC_OT_PC, OPS_MODAL, Operator):
-    """Correct all prepared pose bones rotations using the first frame in the clip"""
-    bl_idname = "pc.correct_pose_clip_rotation"
-    bl_label = "Correct Pose (Full Clip)"
-
-    def do_start(self, context, event):
-        context.scene.frame_current = context.scene.frame_start
-
-    def do_continue(self, context, event):
-        return context.scene.frame_current < context.scene.frame_end
-
-    def do_iteration(self, context, event):
-        arm = context.active_object
-
-        for bone in arm.pose.bones:
-            pose_correction = bone.pose_correction
-            pose_correction.bone_name = bone.name
-
-            if context.scene.frame_current == context.scene.frame_start:
-                pose_correction.reference_rotation = pose_correction.get_rotation()
-                continue
-
-            if correct_pose_rotation(context, arm, bone):
-                path = get_bone_data_path(bone.name, 'rotation_quaternion')
-
-                f = context.scene.frame_current
-                for i in range(4):
-                    arm.keyframe_insert(path, index=i, frame=f)
-
-        context.scene.frame_current += 1
-
-class PC_OT_correct_pose_clip_scale(PC_OT_PC, OPS_MODAL, Operator):
-    """Correct all prepared pose bones scales using the first frame in the clip"""
-    bl_idname = "pc.correct_pose_clip_scale"
-    bl_label = "Correct Pose (Full Clip)"
-
-    def do_start(self, context, event):
-        context.scene.frame_current = context.scene.frame_start
-
-    def do_continue(self, context, event):
-        return context.scene.frame_current < context.scene.frame_end
-
-    def do_iteration(self, context, event):
-        arm = context.active_object
-
-        for bone in arm.pose.bones:
-            pose_correction = bone.pose_correction
-            pose_correction.bone_name = bone.name
-
-            if context.scene.frame_current == context.scene.frame_start:
-                pose_correction.reference_scale = pose_correction.get_scale()
-                continue
-
-            if correct_pose_scale(context, arm, bone):
-                path = get_bone_data_path(bone.name, 'scale')
-
-                f = context.scene.frame_current
-                for i in range(3):
-                    arm.keyframe_insert(path, index=i, frame=f)
-
-        context.scene.frame_current += 1

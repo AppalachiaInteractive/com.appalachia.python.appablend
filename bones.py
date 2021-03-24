@@ -375,3 +375,32 @@ def align_bone_x_axis(edit_bone, new_x_axis):
     dot2 = edit_bone.z_axis.dot(new_x_axis)
     if dot1 > dot2:
         edit_bone.roll += angle * 2.0
+
+def get_disconnected_bone_names(armature):    
+    disconnected_bone_names = set()
+    for b in armature.data.bones:
+        if not b.use_connect:
+            disconnected_bone_names.add(b.name)
+
+    return disconnected_bone_names
+
+def get_parent_bone_names(bone):    
+    parent_bone_names = set()
+    parent_bone = bone
+    while parent_bone is not None:
+        parent_bone_names.add(parent_bone.name)
+        parent_bone = parent_bone.parent
+        
+    return parent_bone_names
+
+def get_child_bone_names_recursive(bone):
+    bone_names = set()
+
+    for child in bone.children:
+        bone_names.add(child.name)
+
+        cr = get_child_bone_names_recursive(child)
+        bone_names.union(cr)
+    
+    return bone_names
+

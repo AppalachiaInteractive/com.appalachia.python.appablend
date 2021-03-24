@@ -266,15 +266,15 @@ class ACT_OT_combine_all_actions(OPS_, Operator):
 
                     new_clip.action = master_action
 
-                    new_clip.start_frame += start
-                    new_clip.stop_frame += start
-                    extreme_frames.add(new_clip.start_frame)
-                    extreme_frames.add(new_clip.stop_frame)
+                    new_clip.frame_start += start
+                    new_clip.frame_end += start
+                    extreme_frames.add(new_clip.frame_start)
+                    extreme_frames.add(new_clip.frame_end)
 
                     s = master_action.pose_markers.new(new_clip.name)
                     e = master_action.pose_markers.new('{0}.end'.format(new_clip.name))
-                    s.frame = new_clip.start_frame
-                    e.frame = new_clip.stop_frame
+                    s.frame = new_clip.frame_start
+                    e.frame = new_clip.frame_end
 
             for fc in action.fcurves:
                 data_path = fc.data_path

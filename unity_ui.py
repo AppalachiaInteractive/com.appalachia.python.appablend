@@ -1,267 +1,328 @@
 import cspy
 from cspy.unity import *
 from cspy.unity_ops import *
+from cspy.unity_ul import *
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.polling import POLL
 from cspy import subtypes
 
-def draw_clip(unity_clip, layout):
-    box = layout.box()
-    col = box.column(align=True)
-    row = col.row(align=True)
-    row_1 = row.split()
-    row_1.enabled = False
-    row_1.prop(unity_clip, 'action')
-    row_2 = row.split()
-    row_2.operator(UNITY_OT_sync_actions_with_clips.bl_idname, text='Sync')
-    row_2.enabled = (unity_clip.action != unity_clip.id_data)
-    col = box.column(align=True)
-    col.prop(unity_clip, 'fbx_name')
-    col.prop(unity_clip, 'name')
-    col.enabled = False
 
-    col = box.column(align=True)
-
-    row = col.row(align=True)
-    clamp_button = row.operator(UNITY_OT_clamp_to_clip.bl_idname)
-    if unity_clip and unity_clip.action:
-        clamp_button.action_name = unity_clip.action.name
-        clamp_button.clip_name = unity_clip.name
-    play_button = row.operator(UNITY_OT_clamp_to_clip_and_play.bl_idname)
-    if unity_clip and unity_clip.action:
-        play_button.action_name = unity_clip.action.name
-        play_button.clip_name = unity_clip.name
-
-    col.separator()
-    row = col.row(align=True)
-    row.prop(unity_clip, 'start_frame', text='Start')
-    row.prop(unity_clip, 'stop_frame', text='Stop')
-    row.prop(unity_clip, 'loop_time', text='Loop?')
-
-    col.separator()
-    row = col.row(align=True)
-    row.prop(unity_clip, 'rot_bake_into',text='Bake Rot.')
-    row.prop(unity_clip, 'y_bake_into', text='Bake Y')
-    row.prop(unity_clip, 'xz_bake_into', text='Bake XZ')
-
-    col.separator()
-    row = col.row(align=True)
-    row.prop(unity_clip, 'rot_offset', text='Rot. Offset')
-    row.prop(unity_clip, 'y_offset', text='Y Offset')
-
-def draw_clip_row(unity_clip, layout):
-    layout.label(text=unity_clip.name)
-
-class UNITY_UL_UnityClips(bpy.types.UIList):
-    use_filter_sort_time: bpy.props.BoolProperty(name="Sort By Frame", default=True)
-
-    show_exclusive: bpy.props.BoolProperty(name="Show Exclusive", default=False)
-    show_loop: bpy.props.BoolProperty(name="Show Looping", default=False)
-    show_bake_rot: bpy.props.BoolProperty(name="Show Baked Rot.", default=False)
-    show_bake_y: bpy.props.BoolProperty(name="Show Baked Y.", default=False)
-    show_bake_xz: bpy.props.BoolProperty(name="Show Baked XZ.", default=False)
-    show_offset_rot: bpy.props.BoolProperty(name="Show Offset Rot.", default=False)
-    show_offset_y: bpy.props.BoolProperty(name="Show Offset Y", default=False)
-
-    hide_exclusive: bpy.props.BoolProperty(name="Hide Exclusive", default=False)
-    hide_loop: bpy.props.BoolProperty(name="Hide Looping", default=False)
-    hide_bake_rot: bpy.props.BoolProperty(name="Hide Baked Rot.", default=False)
-    hide_bake_y: bpy.props.BoolProperty(name="Hide Baked Y.", default=False)
-    hide_bake_xz: bpy.props.BoolProperty(name="Hide Baked XZ.", default=False)
-    hide_offset_rot: bpy.props.BoolProperty(name="Hide Offset Rot.", default=False)
-    hide_offset_y: bpy.props.BoolProperty(name="Hide Offset Y", default=False)
-
-    def draw_filter(self, context, layout):
-        row = layout.row()
-        row.label(text="Show Only:")
-        row.prop(self, "show_exclusive", text='Exclusive', toggle=True)
-        row = layout.row()
-        row.prop(self, "show_loop", text='Loop', toggle=True)
-        row.prop(self, "show_offset_rot", text='Offs. Rot', toggle=True)
-        row.prop(self, "show_offset_y", text='Offs. Y', toggle=True)
-        row = layout.row()
-        row.prop(self, "show_bake_rot", text='Bake Rot', toggle=True)
-        row.prop(self, "show_bake_y", text='Bake Y', toggle=True)
-        row.prop(self, "show_bake_xz", text='Bake XZ', toggle=True)
-
-        row = layout.row()
-        row.label(text="Hide:")
-        row.prop(self, "hide_exclusive", text='Exclusive', toggle=True)
-        row = layout.row()
-        row.prop(self, "hide_loop", text='Loop', toggle=True)
-        row.prop(self, "hide_offset_rot", text='Offs. Rot', toggle=True)
-        row.prop(self, "hide_offset_y", text='Offs. Y', toggle=True)
-        row = layout.row()
-        row.prop(self, "hide_bake_rot", text='Bake Rot', toggle=True)
-        row.prop(self, "hide_bake_y", text='Bake Y', toggle=True)
-        row.prop(self, "hide_bake_xz", text='Bake XZ', toggle=True)
-
-        row = layout.row()
-        subrow = row.row(align=True)
-        subrow.prop(self, "filter_name", text="")
-        subrow.prop(self, "use_filter_invert", text="", icon='ARROW_LEFTRIGHT')
-
-        subrow = row.row(align=True)
-        subrow.prop(self, "use_filter_sort_alpha", text='', icon='SORTALPHA')
-        subrow.prop(self, "use_filter_sort_time", text='', icon='SORTTIME')
-        icon = 'SORT_ASC' if self.use_filter_sort_reverse else 'SORT_DESC'
-        subrow.prop(self, "use_filter_sort_reverse", text="", icon=icon)
-
-    def filter_items(self, context, data, propname):
-        """Filter and order items in the list."""
-
-        helper_funcs = bpy.types.UI_UL_list
-
-        items = getattr(data, propname)
-
-        # Filtering by name
-        filtered = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, items, "name", reverse=False)
-
-        if not filtered:
-            filtered = [self.bitflag_filter_item] * len(items)
-
-        show_filter = self.show_loop or self.show_bake_rot or self.show_bake_xz or self.show_bake_y or self.show_offset_rot or self.show_offset_y
-        hide_filter = self.hide_loop or self.hide_bake_rot or self.hide_bake_xz or self.hide_bake_y or self.hide_offset_rot or self.hide_offset_y
-
-        for index, item in enumerate(items):
-            excluded=False
-
-            if not item:
-                excluded = True
-
-            if not excluded and show_filter:
-                if self.show_exclusive: # all of them
-                    included = (
-                        (not self.show_loop or item.loop_time) and
-                        (not self.show_bake_rot or item.rot_bake_into) and
-                        (not self.show_bake_y or item.y_bake_into) and
-                        (not self.show_bake_xz or item.xz_bake_into) and
-                        (not self.show_offset_rot or item.rot_offset != 0.0) and
-                        (not self.show_offset_y or item.y_offset != 0.0))
-                else: # any of them
-                    included = (
-                        (self.show_loop and item.loop_time) or
-                        (self.show_bake_rot and item.rot_bake_into) or
-                        (self.show_bake_y and item.y_bake_into) or
-                        (self.show_bake_xz and item.xz_bake_into) or
-                        (self.show_offset_rot and item.rot_offset != 0.0) or
-                        (self.show_offset_y and item.y_offset != 0.0))
-                excluded = not included
-
-            if not excluded and hide_filter:
-                if self.hide_exclusive: # all of them
-                    included = (
-                        (not self.hide_loop or item.loop_time) and
-                        (not self.hide_bake_rot or item.rot_bake_into) and
-                        (not self.hide_bake_y or item.y_bake_into) and
-                        (not self.hide_bake_xz or item.xz_bake_into) and
-                        (not self.hide_offset_rot or item.rot_offset != 0.0) and
-                        (not self.hide_offset_y or item.y_offset != 0.0))
-                else: # any of them
-                    included = (
-                        (self.hide_loop and item.loop_time) or
-                        (self.hide_bake_rot and item.rot_bake_into) or
-                        (self.hide_bake_y and item.y_bake_into) or
-                        (self.hide_bake_xz and item.xz_bake_into) or
-                        (self.hide_offset_rot and item.rot_offset != 0.0) or
-                        (self.hide_offset_y and item.y_offset != 0.0))
-                excluded = not included
-
-            if excluded:
-                filtered[index] &= ~self.bitflag_filter_item
-
-        ordered = []
-
-        # Reorder by name or average weight.
-        if self.use_filter_sort_alpha:
-            sort = [(idx, getattr(it, 'name', "")) for idx, it in enumerate(items)]
-        elif self.use_filter_sort_time:
-            sort = [(idx, getattr(it, 'start_frame', "")) for idx, it in enumerate(items)]
-
-            ordered = helper_funcs.sort_items_helper(sort, lambda e: e[1] if not hasattr(e[1], 'lower') else e[1].lower())
-
-        return filtered, ordered
-
-    def draw_item(self, _context, layout, _data, item, icon, _active_data_, _active_propname, _index):
-        try:
-            if self.layout_type in {'DEFAULT', 'COMPACT'}:
-                #draw_clip(item, layout)
-                draw_clip_row(item, layout)
-
-            elif self.layout_type == 'GRID':
-                layout.alignment = 'CENTER'
-                layout.label(text="", icon_value=icon)
-        except Exception as inst:
-            print(inst)
-            raise
-
-def draw_clip_buttons(layout, scene, context):
-    layout.prop(scene, 'unity_sheet_dir_path')
-    row = layout.row(align=True)
-    row.operator(UNITY_OT_refresh_clip_data.bl_idname)
-    row.operator(UNITY_OT_refresh_clip_data_all.bl_idname)
-    row = layout.row(align=True)
-    row.operator(UNITY_OT_clear_clip_data.bl_idname)
-    row.operator(UNITY_OT_clear_clip_data_all.bl_idname)
-    row = layout.row(align=True)
-    row.operator(UNITY_OT_sort_clip_data.bl_idname)
-    row.operator(UNITY_OT_sort_clip_data_all.bl_idname)
-    row = layout.row(align=True)
-    row.prop(context.active_object.animation_data.action, 'unity_clip_template')
-    row.operator(UNITY_OT_copy_clips_from_template.bl_idname)
-    row = layout.row(align=True)
-    row.operator(UNITY_OT_demarcate_clips.bl_idname)
-
-class VIEW_3D_PT_UI_Tool_Unity(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
+class UNITY_PANEL:
     bl_label = "Unity"
+    bl_icon = cspy.icons.FILE_3D
+
+    @classmethod
+    def do_poll(cls, context):
+        return POLL.active_object_animation_data(context)
+
+class VIEW_3D_PT_UI_Tool_Unity(UNITY_PANEL, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
     bl_idname = "VIEW_3D_PT_UI_Tool_Unity"
-    bl_icon = cspy.icons.FILE_3D
-
-    @classmethod
-    def do_poll(cls, context):
-        return POLL.active_object_animation_data(context)
 
     def do_draw(self, context, scene, layout, obj):
-        draw_clip_buttons(layout, scene, context)
+        pass
 
-        action = obj.animation_data.action
-
-        layout.template_list("UNITY_UL_UnityClips", "", action, "unity_clips", action, "unity_index", rows=2,maxrows=4)
-
-        unity_clip = action.unity_clips[action.unity_index]
-        draw_clip(unity_clip, layout)
-
-
-class DOPESHEET_EDITOR_PT_UI_Tool_Unity(bpy.types.Panel, PT_, UI.DOPESHEET_EDITOR.UI):
-    bl_label = "Unity"
+class DOPESHEET_EDITOR_PT_UI_Tool_Unity(UNITY_PANEL, UI.DOPESHEET_EDITOR.UI, PT_, bpy.types.Panel):
     bl_idname = "DOPESHEET_EDITOR_PT_UI_Tool_Unity"
-    bl_icon = cspy.icons.FILE_3D
+
+    def do_draw(self, context, scene, layout, obj):
+        pass
+
+class UNITY_SUBPANEL():
+    @classmethod
+    def do_poll(cls, context):
+        return True
+
+class _PT_Unity_00_Sheets(UNITY_SUBPANEL):
+    bl_icon = cspy.icons.FILE
+    bl_label = 'Unity Sheets'
+
+    def do_draw(self, context, scene, layout, obj):    
+        layout.prop(scene, 'unity_sheet_dir_path')
+        row = layout.row(align=True)
+        row.operator(UNITY_OT_refresh_clip_data.bl_idname)
+        row.operator(UNITY_OT_refresh_clip_data_all.bl_idname)
+        row = layout.row(align=True)
+        row.operator(UNITY_OT_clear_clip_data.bl_idname)
+        row.operator(UNITY_OT_clear_clip_data_all.bl_idname)
+        row = layout.row(align=True)
+        row.operator(UNITY_OT_sort_clip_data.bl_idname)
+        row.operator(UNITY_OT_sort_clip_data_all.bl_idname)
+        row = layout.row(align=True)
+        row.operator(UNITY_OT_demarcate_clips.bl_idname)
+        row.operator(UNITY_OT_update_master_clip_metadata.bl_idname)
+        row = layout.row(align=True)
+        row.operator(UNITY_OT_remove_non_clip_keys.bl_idname)
+        row = layout.row(align=True)
+        row.prop(context.active_object.animation_data.action, 'unity_clip_template')
+        row.operator(UNITY_OT_copy_clips_from_template.bl_idname)
+
+class _PT_Unity_01_Clips(UNITY_SUBPANEL):
+    bl_icon = cspy.icons.SEQ_SEQUENCER
+    bl_label = 'Unity Clips'
+
+    def do_draw(self, context, scene, layout, obj):
+        action = obj.animation_data.action
+
+        layout.template_list("UNITY_UL_UnityClips", "", action, "unity_clips", action, "unity_index", rows=2,maxrows=4)
+    
+_icon_metadata = cspy.icons.MESH_DATA
+_icon_root_motion = cspy.icons.CON_FOLLOWPATH
+_icon_frames = cspy.icons.CAMERA_DATA
+_icon_pose = cspy.icons.ARMATURE_DATA
+_icon_delete = cspy.icons.GHOST_DISABLED
+
+class _PT_Unity_02_Clip(UNITY_SUBPANEL):
+    bl_icon = cspy.icons.SEQUENCE
+    bl_label = 'Clip'
+
+    def do_draw(self, context, scene, layout, obj):
+        action = obj.animation_data.action
+        unity_clip = action.unity_clips[action.unity_index]     
+        
+        box = layout.box()
+        col = box.column(align=True)
+        row = col.row(align=True)
+
+        row.label(text=unity_clip.name)   
+
+        row.alignment='RIGHT'
+
+        draw_settings = scene.unity_clip_draw_settings
+
+        row.prop(draw_settings, 'draw_metadata',toggle=True, text='', icon=_icon_metadata)
+        row.prop(draw_settings, 'draw_root_motion',toggle=True, text='', icon=_icon_root_motion)
+        row.prop(draw_settings, 'draw_frames',toggle=True, text='', icon=_icon_frames)
+        row.prop(draw_settings, 'draw_pose',toggle=True, text='', icon=_icon_pose)
+        row.prop(draw_settings, 'draw_delete',toggle=True, text='', icon=_icon_delete)
+
+        row = col.row(align=True)
+        
+        sf = context.scene.frame_current
+        ss = context.scene.frame_start
+        se = context.scene.frame_end
+
+        s = unity_clip.frame_start
+        e = unity_clip.frame_end
+
+        row.enabled = ss != s or se != e
+        row.alert = row.enabled
+        clamp_button = row.operator(UNITY_OT_clamp_to_clip.bl_idname)
+        play_button = row.operator(UNITY_OT_clamp_to_clip_and_play.bl_idname)     
+
+        row2 = row.split()
+        row2.enabled = sf < s or sf < e
+        set_button = row2.operator(UNITY_OT_Set_By_Current_Frame.bl_idname)
+
+        if unity_clip and unity_clip.action:
+            play_button.action_name = unity_clip.action.name
+            play_button.clip_name = unity_clip.name
+            clamp_button.action_name = unity_clip.action.name
+            clamp_button.clip_name = unity_clip.name
+            set_button.action_name = unity_clip.action.name
+            set_button.clip_name = unity_clip.name
+        
+        if context.scene.unity_clip_draw_settings.draw_delete:
+            row = col.row(align=True)
+            row.alert = True
+            row.operator(UNITY_OT_delete_clip.bl_idname)
+
+
+class _CLIP_SUBPANEL(UNITY_SUBPANEL):
+    def do_draw(self, context, scene, layout, obj):
+        action = obj.animation_data.action
+        unity_clip = action.unity_clips[action.unity_index]
+
+        self.finish_draw(context, scene, layout, obj, action, unity_clip)
+
+
+class _PT_Unity_02_Clip_00_Metadata(_CLIP_SUBPANEL):
+    bl_icon = _icon_metadata
+    bl_label = 'Metadata'
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_animation_data(context)
+        return context.scene.unity_clip_draw_settings.draw_metadata
 
-    def do_draw(self, context, scene, layout, obj):
-        draw_clip_buttons(layout, scene, context)
+    def finish_draw(self, context, scene, layout, obj, action, unity_clip):
+        box = layout.box()
+        col = box.column(align=True)
+        row = col.row(align=True)
+        row_1 = row.split()
+        row_1.enabled = False
+        row_1.prop(unity_clip, 'action')
+        row_2 = row.split()
+        row_2.operator(UNITY_OT_sync_actions_with_clips.bl_idname, text='Sync')
+        row_2.enabled = (unity_clip.action != unity_clip.id_data)
+        col = box.column(align=True)
+        col.prop(unity_clip, 'fbx_name')
+        col.prop(unity_clip, 'name')
+        col.enabled = False
+            
 
-        action = obj.animation_data.action
+class _PT_Unity_02_Clip_01_RootMotion(_CLIP_SUBPANEL):
+    bl_icon = _icon_root_motion
+    bl_label = 'Root Motion'
 
-        if len(action.unity_clips) == 0:
-            return
+    @classmethod
+    def do_poll(cls, context):
+        return context.scene.unity_clip_draw_settings.draw_root_motion
 
-        layout.template_list("UNITY_UL_UnityClips", "", action, "unity_clips", action, "unity_index", rows=2,maxrows=4)
+    def finish_draw(self, context, scene, layout, obj, action, unity_clip):
+        box = layout.box()
+        col = box.column(align=True)
 
-        if action.unity_index < 0:
-            return
+        col.separator()
+        row = col.row(align=True)
+        row.prop(unity_clip, 'rot_bake_into',text='Bake Rot.')
+        row.prop(unity_clip, 'y_bake_into', text='Bake Y')
+        row.prop(unity_clip, 'xz_bake_into', text='Bake XZ')
 
-        unity_clip = action.unity_clips[action.unity_index]
-        draw_clip(unity_clip, layout)
+        col.separator()
+        row = col.row(align=True)
+        row.prop(unity_clip, 'rot_offset', text='Rot. Offset')
+        row.prop(unity_clip, 'y_offset', text='Y Offset')
+
+
+class _PT_Unity_02_Clip_02_Frames(_CLIP_SUBPANEL):
+    bl_icon = _icon_frames
+    bl_label = 'Frames'
+
+    @classmethod
+    def do_poll(cls, context):
+        return context.scene.unity_clip_draw_settings.draw_frames
+
+    def finish_draw(self, context, scene, layout, obj, action, unity_clip):
+        box = layout.box()
+        col = box.column(align=True)
+        
+        row = col.row(align=True)
+        row.prop(unity_clip, 'frame_start', text='Start')
+        row.prop(unity_clip, 'frame_end', text='Stop')
+        row.prop(unity_clip, 'loop_time', text='Loop?')
+
+class _PT_Unity_02_Clip_03_Pose(_CLIP_SUBPANEL):
+    bl_icon = _icon_pose
+    bl_label = 'Pose'
+
+    @classmethod
+    def do_poll(cls, context):
+        return context.scene.unity_clip_draw_settings.draw_pose
+
+    def finish_draw(self, context, scene, layout, obj, action, unity_clip):
+        box = layout.box()    
+        
+        row = box.row(align=True)
+        row.prop_search(unity_clip, 'pose_start', obj.pose_library, 'pose_markers', text='Start')
+        row = row.split()
+        row.alignment = 'RIGHT'
+        row.prop(unity_clip, 'pose_start_rooted', text='Root?')        
+        
+        row = box.row(align=True)
+        col1 = row.column(align=True)
+        start_apply_start = col1.operator(UNITY_OT_apply_pose.bl_idname,text='To Start')
+        
+        col2 = row.column(align=True)
+        col2.enabled = context.scene.frame_current != context.scene.frame_start
+        start_apply_current = col2.operator(UNITY_OT_apply_pose.bl_idname,text='To Current')
+        
+        col3 = row.column(align=True)
+        col3.enabled = not unity_clip.pose_start.startswith(unity_clip.name)
+        start_new_current = col3.operator(UNITY_OT_new_pose.bl_idname,text='From Current')
+
+        start_apply_start.pose_name = unity_clip.pose_start
+        start_apply_start.frame = unity_clip.frame_start
+        start_apply_start.rooted = unity_clip.pose_start_rooted
+        start_apply_current.pose_name = unity_clip.pose_start
+        start_apply_current.frame = context.scene.frame_current
+        start_apply_current.rooted = unity_clip.pose_start_rooted
+        start_new_current.start = True
+        start_new_current.frame = context.scene.frame_current
+        
+
+        row = box.row(align=True)
+        row.prop_search(unity_clip, 'pose_end', obj.pose_library, 'pose_markers', text='End')
+        row = row.split()
+        row.alignment = 'RIGHT'
+        row.prop(unity_clip, 'pose_end_rooted', text='Root?')        
+        
+        
+        row = box.row(align=True)
+        col1 = row.column(align=True)
+        end_apply_end = col1.operator(UNITY_OT_apply_pose.bl_idname,text='To End')
+        
+        col2 = row.column(align=True)
+        col2.enabled = context.scene.frame_current != context.scene.frame_end
+        end_apply_current = col2.operator(UNITY_OT_apply_pose.bl_idname,text='To Current')
+        
+        col3 = row.column(align=True)
+        col3.enabled = not unity_clip.pose_end.endswith(unity_clip.name)
+        end_new_current = col3.operator(UNITY_OT_new_pose.bl_idname,text='From Current')
+
+        end_apply_end.pose_name = unity_clip.pose_end
+        end_apply_end.frame = unity_clip.frame_end
+        end_apply_end.rooted = unity_clip.pose_end_rooted
+        end_apply_current.pose_name = unity_clip.pose_end
+        end_apply_current.frame = context.scene.frame_current
+        end_apply_current.rooted = unity_clip.pose_end_rooted
+        end_new_current.start = False
+        end_new_current.frame = context.scene.frame_current
+             
+
+
+class VIEW_3D_PT_UI_Tool_Unity_00_Sheets(_PT_Unity_00_Sheets, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
+    bl_parent_id = VIEW_3D_PT_UI_Tool_Unity.bl_idname
+    bl_idname = "VIEW_3D_PT_UI_Tool_Unity_00_Sheets"
+
+class VIEW_3D_PT_UI_Tool_Unity_01_Clips(_PT_Unity_01_Clips, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
+    bl_parent_id = VIEW_3D_PT_UI_Tool_Unity.bl_idname
+    bl_idname = "VIEW_3D_PT_UI_Tool_Unity_01_Clips"
+
+class VIEW_3D_PT_UI_Tool_Unity_02_Clip(_PT_Unity_02_Clip, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
+    bl_parent_id = VIEW_3D_PT_UI_Tool_Unity.bl_idname
+    bl_idname = "VIEW_3D_PT_UI_Tool_Unity_02_Clip"
+
+class VIEW_3D_PT_UI_Tool_Unity_02_Clip_00_Metadata(_PT_Unity_02_Clip_00_Metadata, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
+    bl_parent_id = VIEW_3D_PT_UI_Tool_Unity_02_Clip.bl_idname
+    bl_idname = "VIEW_3D_PT_UI_Tool_Unity_02_Clip_00_Metadata"
+
+class VIEW_3D_PT_UI_Tool_Unity_02_Clip_01_RootMotion(_PT_Unity_02_Clip_01_RootMotion, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
+    bl_parent_id = VIEW_3D_PT_UI_Tool_Unity_02_Clip.bl_idname
+    bl_idname = "VIEW_3D_PT_UI_Tool_Unity_02_Clip_01_RootMotion"
+
+class VIEW_3D_PT_UI_Tool_Unity_02_Clip_02_Frames(_PT_Unity_02_Clip_02_Frames, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
+    bl_parent_id = VIEW_3D_PT_UI_Tool_Unity_02_Clip.bl_idname
+    bl_idname = "VIEW_3D_PT_UI_Tool_Unity_02_Clip_02_Frames"
+
+class VIEW_3D_PT_UI_Tool_Unity_02_Clip_03_Pose(_PT_Unity_02_Clip_03_Pose, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
+    bl_parent_id = VIEW_3D_PT_UI_Tool_Unity_02_Clip.bl_idname
+    bl_idname = "VIEW_3D_PT_UI_Tool_Unity_02_Clip_03_Pose"
+
+
+""" class DOPESHEET_EDITOR_PT_UI_Tool_Unity_00_Sheets(_PT_Unity_00_Sheets, UI.DOPESHEET_EDITOR.UI, PT_, bpy.types.Panel):
+    bl_parent_id = DOPESHEET_EDITOR_PT_UI_Tool_Unity.bl_idname
+    bl_idname = "DOPESHEET_EDITOR_PT_UI_Tool_Unity_00_Sheets"
+
+class DOPESHEET_EDITOR_PT_UI_Tool_Unity_01_Clips(_PT_Unity_01_Clips,UI.DOPESHEET_EDITOR.UI, PT_, bpy.types.Panel):
+    bl_parent_id = DOPESHEET_EDITOR_PT_UI_Tool_Unity.bl_idname
+    bl_idname = "DOPESHEET_EDITOR_PT_UI_Tool_Unity_01_Clips" """
+
+
+def _update_unity_index(self, context):
+    action = context.active_object.animation_data.action
+    clip = action.unity_clips[action.unity_index]
+
+    context.scene.frame_start = clip.frame_start
+    context.scene.frame_end = clip.frame_end
+    context.scene.frame_current = clip.frame_start
+
 
 def register():
     bpy.types.Scene.unity_sheet_dir_path = bpy.props.StringProperty(name="Sheet Dir Path", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
+    bpy.types.Scene.unity_clip_draw_settings = bpy.props.PointerProperty(name="Unity Clip Draw Settings", type=UnityClipDrawSettings)
+    
     bpy.types.Action.unity_clip_template = bpy.props.PointerProperty(name="Unity Clip Template", type=bpy.types.Action)
     bpy.types.Action.unity_clips = bpy.props.CollectionProperty(name="Unity Clips", type=UnityClipMetadata)
-    bpy.types.Action.unity_index = bpy.props.IntProperty(name='Unity Index', default = 0, min=0)
+    bpy.types.Action.unity_index = bpy.props.IntProperty(name='Unity Index', default = 0, min=0, update=_update_unity_index)
     bpy.types.Action.unity_clips_protected = bpy.props.BoolProperty(name='Unity Clips Protected', default=False)
     bpy.types.Object.rot_bake_into = bpy.props.IntProperty(name="rot_bake_into", min=0,max=1,default=1)
     bpy.types.Object.rot_offset = bpy.props.FloatProperty(name="rot_offset", default=0.0)
@@ -271,6 +332,7 @@ def register():
 
 def unregister():
     del bpy.types.Scene.unity_sheet_dir_path
+    del bpy.types.Scene.unity_clip_draw_settings
     del bpy.types.Action.unity_clip_template
     del bpy.types.Action.unity_clips
     del bpy.types.Action.unity_index

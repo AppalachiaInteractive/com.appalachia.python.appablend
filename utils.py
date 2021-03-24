@@ -22,7 +22,7 @@ def create_enum(enum_items):
 
         enums = []
         for key in keys:
-            item = (key, key.capitalize(), '')
+            item = (key, key.capitalize(), key.capitalize())
             enums.append(item)
 
         return enums

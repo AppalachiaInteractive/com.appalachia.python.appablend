@@ -313,6 +313,12 @@ class MC_PT_Settings_Panel(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Menu):
         #box.operator('ops.mc_cleanprop', text="Clean all objects")
         box.operator('ops.mc_cleanprop', text="Reset All Objects", icon="ERROR").reset = True
 
+def menu_func(self, context):
+    if hasattr(context, 'button_prop'):
+            layout = self.layout
+            layout.separator()
+            layout.operator(MC_AddProperty.bl_idname)
+
 
 def register():
     bpy.types.Object.mc_properties = bpy.props.CollectionProperty(type=MCPropertyItem)

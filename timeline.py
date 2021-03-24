@@ -35,7 +35,7 @@ def clamp_to_action(context, play=False):
     clamp_timeline_to_range(context, action.frame_range[0], action.frame_range[1], play)
 
 def clamp_to_unity_clip(context, clip, play=False):
-    clamp_timeline_to_range(context, clip.start_frame, clip.stop_frame, play)
+    clamp_timeline_to_range(context, clip.frame_start, clip.frame_end, play)
 
 def clamp_to_strips(context, play=False):
     strips = get_selected_strips()

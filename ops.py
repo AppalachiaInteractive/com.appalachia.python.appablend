@@ -1,5 +1,6 @@
 import bpy, cspy
 from bpy.types import Operator
+import time
 
 
 class OPS_OPTION:
@@ -47,7 +48,7 @@ class OPS_(Operator):
         try:
             return cls.do_poll(context)
         except Exception as inst:
-            print('{0}:  [do_poll]  {1}'.format(cspy.utils.get_logging_name(cls), inst))
+            print('[EXCP] {0}:  [do_poll]  {1}'.format(cspy.utils.get_logging_name(cls), inst))
             return False
 
     @classmethod
@@ -70,12 +71,16 @@ class OPS_(Operator):
         try:
             use_global_undo = context.preferences.edit.use_global_undo
             context.preferences.edit.use_global_undo = False
+            start = time.perf_counter()
             returning = self.do_execute(context)
+            end = time.perf_counter()
+
+            print('[PERF] {0}:  [do_execute]  {1}s'.format(cspy.utils.get_logging_name(self), end - start))
 
             if returning is None:
                 returning = self.finished()
         except Exception as inst:
-            print('{0}:  [do_execute]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+            print('[EXCP] {0}:  [do_execute]  {1}'.format(cspy.utils.get_logging_name(self), inst))
             returning = self.cancelled()
         finally:
             context.preferences.edit.use_global_undo = use_global_undo
@@ -118,7 +123,7 @@ class OPS_MODAL(OPS_):
             if self.do_cancel(context, event):
                 return self.cancelled()
         except Exception as inst:
-            print('{0}:  [do_cancel]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+            print('[EXCP] {0}:  [do_cancel]  {1}'.format(cspy.utils.get_logging_name(self), inst))
             return self.cancelled()
 
         try:
@@ -126,18 +131,18 @@ class OPS_MODAL(OPS_):
                 try:
                     self.do_iteration(context, event)
                 except Exception as inst:
-                    print('{0}:  [do_iteration]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+                    print('[EXCP] {0}:  [do_iteration]  {1}'.format(cspy.utils.get_logging_name(self), inst))
                     return self.cancelled()
 
                 return self.running_modal()
         except Exception as inst:
-            print('{0}:  [do_continue]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+            print('[EXCP] {0}:  [do_continue]  {1}'.format(cspy.utils.get_logging_name(self), inst))
             return self.cancelled()
 
         try:
             self.do_end(context, event)
         except Exception as inst:
-            print('{0}:  [do_end]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+            print('[EXCP] {0}:  [do_end]  {1}'.format(cspy.utils.get_logging_name(self), inst))
             return self.cancelled()
 
         return self.finished()

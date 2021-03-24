@@ -313,10 +313,3 @@ def mc_len_collection(collection):
     for el in collection:
         i=i+1
     return i
-
-def menu_func(self, context):
-    if hasattr(context, 'button_prop'):
-            layout = self.layout
-            layout.separator()
-            layout.operator(MC_AddProperty.bl_idname)
-

@@ -27,8 +27,9 @@ class TIMELINE_PT_Timeline:
         row.operator(TIMELINE_OT_play_timeline.bl_idname, icon=cspy.icons.PLAY, text='')
         row.operator(TIMELINE_OT_stop_timeline.bl_idname, icon=cspy.icons.PAUSE,text='')
         row.operator(TIMELINE_OT_ff_timeline.bl_idname, icon=cspy.icons.FF,text='')
-        row = box.row(align=True)
-        row.label(text='Guess')
+        #row = box.row(align=True)
+        #row.alignment='LEFT'
+        row.label(text='Clip:')
         row.operator(TIMELINE_OT_guess_previous_start.bl_idname, text='', icon=cspy.icons.PREV_KEYFRAME)
         row.operator(TIMELINE_OT_guess_previous_end.bl_idname, text='', icon=cspy.icons.REW)
         row.operator(TIMELINE_OT_previous_clip.bl_idname, text='', icon=cspy.icons.PLAY_REVERSE)
@@ -37,11 +38,11 @@ class TIMELINE_PT_Timeline:
         row.operator(TIMELINE_OT_guess_next_end.bl_idname, text='', icon=cspy.icons.FF)
         row.operator(TIMELINE_OT_guess_next_start.bl_idname, text='', icon=cspy.icons.NEXT_KEYFRAME)
         row = box.row(align=True)
-        row.operator(TIMELINE_OT_clamp_start_to_current.bl_idname, text='Clamp Start')
-        row.operator(TIMELINE_OT_clamp_end_to_current.bl_idname, text='Clamp End')
-        row = box.row(align=True)
-        row.operator(TIMELINE_OT_clamp_to_action.bl_idname)
-        row.operator(TIMELINE_OT_clamp_to_strips.bl_idname)
+        row.label(text='Clamp:')
+        row.operator(TIMELINE_OT_clamp_start_to_current.bl_idname, text='Start')
+        row.operator(TIMELINE_OT_clamp_end_to_current.bl_idname, text='End')
+        row.operator(TIMELINE_OT_clamp_to_action.bl_idname, text='Action')
+        row.operator(TIMELINE_OT_clamp_to_strips.bl_idname, text='Strips')
 
 
 
