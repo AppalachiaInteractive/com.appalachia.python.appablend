@@ -1,4 +1,6 @@
 import bpy
+import cspy
+from cspy import unity
 
 class CONTEXT_MODES:
     EDIT_MESH = 'EDIT_MESH'
@@ -43,6 +45,10 @@ class POLL:
     @classmethod
     def active_object(cls, context):
         return context.active_object is not None
+    @classmethod
+
+    def active_unity_object(cls, context):
+        return cspy.unity.get_active_unity_object(context)
 
     @classmethod
     def active_object_type(cls, context, data_type):
@@ -62,8 +68,28 @@ class POLL:
 
     @classmethod
     def active_object_unity_clips(cls, context):
+        return POLL.active_object_action(context) and context.active_object.animation_data.action.unity_clips #and len(context.active_object.animation_data.action.unity_clips) > 0
+        
+    @classmethod
+    def active_object_unity_clips_none(cls, context):
+        return POLL.active_object_action(context) and context.active_object.animation_data.action.unity_clips and len(context.active_object.animation_data.action.unity_clips) == 0
+        
+    @classmethod
+    def active_object_unity_clips_one(cls, context):
+        return POLL.active_object_action(context) and context.active_object.animation_data.action.unity_clips and len(context.active_object.animation_data.action.unity_clips) == 1
+        
+    @classmethod
+    def active_object_unity_clips_some(cls, context):
         return POLL.active_object_action(context) and context.active_object.animation_data.action.unity_clips and len(context.active_object.animation_data.action.unity_clips) > 0
-
+        
+    @classmethod
+    def active_object_unity_clips_multiple(cls, context):
+        return POLL.active_object_unity_clips(context) and len(context.active_object.animation_data.action.unity_clips) > 1
+   
+    @classmethod
+    def active_object_unity_clips_split(cls, context):        
+        return POLL.active_object_unity_clips_one(context) and context.active_object.animation_data.action.unity_clips[0].source_action is not None
+      
     @classmethod
     def active_ARMATURE(cls, context):
         return POLL.active_object_type(context, OBJECT_TYPES.ARMATURE)
@@ -80,6 +106,10 @@ class POLL:
             context.active_object.anim_ret.source != '' and
             context.active_pose_bone
         )
+
+    @classmethod
+    def active_ARMATURE_action(cls, context):
+        return POLL.active_ARMATURE(context) and POLL.active_object_action(context)
 
     @classmethod
     def active_CURVE(cls, context):
@@ -179,3 +209,27 @@ class POLL:
     @classmethod
     def active_pose_bone(cls, context):
         return context.active_pose_bone
+
+    @classmethod
+    def data_actions(cls, context):
+        return len(bpy.data.actions) > 0
+
+    @classmethod
+    def data_armatures(cls, context):
+        return len(bpy.data.armatures) > 0
+
+    @classmethod
+    def unity_mode(cls, context, mode):
+        return context.scene.unity_settings.mode == mode
+
+    @classmethod
+    def unity_mode_SCENE(cls, context):
+        return  POLL.unity_mode(context, 'SCENE')
+
+    @classmethod
+    def unity_mode_TARGET(cls, context):
+        return POLL.active_unity_object(context) and POLL.unity_mode(context, 'TARGET')
+
+    @classmethod
+    def unity_mode_ACTIVE(cls, context):
+        return POLL.active_unity_object(context) and POLL.unity_mode(context, 'ACTIVE')

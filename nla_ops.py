@@ -3,9 +3,10 @@ from bpy.types import Operator
 from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.nla import *
+from cspy.unity_clips import *
 
 class NLA_OT_actions_to_strip(OPS_, Operator):
-    """Cleans fcurves with the _NOROT or 'Action Bake' names"""
+    """Creates NLA strips for each action."""
     bl_idname = "nla.actions_to_strip"
     bl_label = "Actions To Strip"
 
@@ -31,6 +32,44 @@ class NLA_OT_actions_to_strip(OPS_, Operator):
             start += action.frame_range[1] + padding
         return {'FINISHED'}
 
+class NLA_OT_strips_from_clips(OPS_, Operator):
+    """Seperates actions onto the NLA using the unity clip metadata"""
+    bl_idname = "nla.strips_from_clips"
+    bl_label = "Strips From Clips"
+
+    @classmethod
+    def do_poll(cls, context):
+        return len(bpy.data.actions) > 0
+
+    def do_execute(self, context):
+        obj = context.active_object
+        scene = context.scene
+        scene.frame_start = 1
+
+        clear_nla_tracks(obj)
+
+        track = get_nla_track(obj)
+
+        key_offset = 1
+        padding = 5
+        start, first = add_bind_pose_for_strip_population(context, track, padding)
+
+        for action in bpy.data.actions:
+            for clip in action.unity_clips:
+
+                strip = track.strips.new(clip.name, start, action)
+                strip.name = clip.name
+
+                strip.action_frame_start = clip.frame_start
+                strip.action_frame_end =  clip.frame_end
+                strip.frame_end = strip.frame_start + (strip.action_frame_end - strip.action_frame_start)
+                strip.use_animated_time_cyclic = clip.loop_time
+
+                start = strip.frame_end + padding
+
+        scene.frame_end = start
+        return {'FINISHED'}
+
 class NLA_OT_strips_from_text(OPS_, Operator):
     """Seperates actions onto the NLA using the specified text"""
     bl_idname = "nla.strips_from_text"
@@ -54,14 +93,14 @@ class NLA_OT_strips_from_text(OPS_, Operator):
         start, first = add_bind_pose_for_strip_population(context, track, padding)
 
         for action in bpy.data.actions:
-            for data_path in ['rot_bake_into','rot_offset','y_bake_into','y_offset','xz_bake_into']:
+            for data_path in UnityRootMotionSettings.keys:
                 fcurve = action.fcurves.find(data_path, index=-1)
                 if fcurve:
                     action.fcurves.remove(fcurve)
 
-        path = bpy.path.abspath(scene.unity_sheet_dir_path)
+        path = bpy.path.abspath(scene.unity_settings.sheet_dir_path)
 
-        metadatas = cspy.unity.UnityClipMetadata.parse_files(context, path, key_offset)
+        metadatas = UnityClipMetadata.parse_clip_files(context, path, key_offset)
 
         for metadata in metadatas:
 
@@ -82,7 +121,7 @@ class NLA_OT_strips_from_text(OPS_, Operator):
             start = strip.frame_end + padding
 
             obj.animation_data.action = action
-            for data_path in ['rot_bake_into','rot_offset','y_bake_into','y_offset','xz_bake_into']:
+            for data_path in UnityRootMotionSettings.keys:
 
                 fcurve = action.fcurves.find(data_path, index=-1)
                 if not fcurve:
@@ -117,7 +156,7 @@ class NLA_OT_import_strips(OPS_, Operator):
         obj = context.active_object
         scene = context.scene
 
-        path = bpy.path.abspath(scene.unity_sheet_dir_path)
+        path = bpy.path.abspath(scene.unity_settings.sheet_dir_path)
         fbx_filepaths = cspy.files.get_files_in_dir(path, endswith='.fbx',case_sensitive=False)
 
         for fbx_filepath in fbx_filepaths:

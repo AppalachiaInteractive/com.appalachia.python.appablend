@@ -37,6 +37,18 @@ def clamp_to_action(context, play=False):
 def clamp_to_unity_clip(context, clip, play=False):
     clamp_timeline_to_range(context, clip.frame_start, clip.frame_end, play)
 
+def clamp_to_strip(context, play=False):
+    strips = get_selected_strips()
+
+    start = 10000
+    end = 0
+    for strip in strips:
+        if strip.select:
+            start = min(start, strip.frame_start)
+            end = max(end, strip.frame_end)
+            
+    clamp_timeline_to_range(context, start, end, play)
+
 def clamp_to_strips(context, play=False):
     strips = get_selected_strips()
 

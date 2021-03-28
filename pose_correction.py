@@ -10,6 +10,11 @@ CORRECTION_TYPE = [ 'LOCK', 'NEGATE' ]
 CORRECTION_TYPE_ENUM =  cspy.utils.create_enum(CORRECTION_TYPE)
 CORRECTION_TYPE_ENUM_DEF = 'LOCK'
 
+NEGATE_TYPE = [ 'EXACT', 'OFFSET', 'OBJECT', 'CANCEL' ]
+
+NEGATE_TYPE_ENUM =  cspy.utils.create_enum(NEGATE_TYPE)
+NEGATE_TYPE_ENUM_DEF = 'EXACT'
+
 class PoseCorrection(bpy.types.PropertyGroup):
     bone_name: bpy.props.StringProperty(name='Bone')
 
@@ -21,14 +26,13 @@ class PoseCorrection(bpy.types.PropertyGroup):
     reference_location_frame: bpy.props.IntProperty(name="Frame")    
     
     location_negate_bone_name: bpy.props.StringProperty(name='Negate Bone')
+    location_negate_type: bpy.props.EnumProperty(name='Type', items=NEGATE_TYPE_ENUM, default=NEGATE_TYPE_ENUM_DEF)
+    negate_co_offset: bpy.props.FloatVectorProperty(name='Negation Offset', subtype=subtypes.FloatVectorProperty.Subtypes.TRANSLATION)
+    negate_co_object: bpy.props.FloatVectorProperty(name='Negation Point', subtype=subtypes.FloatVectorProperty.Subtypes.TRANSLATION)
+    negate_cancel_x: bpy.props.BoolProperty(name='Cancel X')
+    negate_cancel_y: bpy.props.BoolProperty(name='Cancel Y')
+    negate_cancel_z: bpy.props.BoolProperty(name='Cancel Z')
 
-    reference_rotation: bpy.props.FloatVectorProperty(name='Reference Rotation', size=4, subtype=subtypes.FloatVectorProperty.Subtypes.QUATERNION)
-    influence_rotation: bpy.props.FloatProperty(name='Influence', default=1.0,min=0.0,max=1.0)
-    reference_rotation_frame: bpy.props.IntProperty(name="Frame")
-
-    reference_scale: bpy.props.FloatVectorProperty(name='Reference Scale', size=3, subtype=subtypes.FloatVectorProperty.Subtypes.XYZ)
-    influence_scale: bpy.props.FloatProperty(name='Influence', default=1.0,min=0.0,max=1.0)
-    reference_scale_frame: bpy.props.IntProperty(name="Frame")
 
     def decompose_bones(self, name):
         arm =  self.id_data
@@ -40,43 +44,28 @@ class PoseCorrection(bpy.types.PropertyGroup):
         loc, rot, sca = self.decompose_bones(name)
         return loc
 
-    def get_rotation_by_bone(self, name):
-        loc, rot, sca = self.decompose_bones(name)
-        return rot
-
-    def get_scale_by_bone(self, name):
-        loc, rot, sca = self.decompose_bones(name)
-        return sca
-
     def get_location(self):
         return self.get_location_by_bone(self.bone_name)
 
     def get_location_correction(self):
         if self.location_correction_type == 'LOCK':
             return self.influence_location * (self.reference_location - self.get_location())
-        else:
+        elif self.location_correction_type == 'NEGATE':
             bl = self.get_location()
-            nl = self.get_location_by_bone(self.location_negate_bone_name)
+            
+            if self.location_negate_type == 'EXACT':
+                nl = self.get_location_by_bone(self.location_negate_bone_name)
+            elif self.location_negate_type == 'OFFSET':
+                nl = self.get_location_by_bone(self.location_negate_bone_name) + self.negate_co_offset
+            elif self.location_negate_type == 'OBJECT':
+                nl = self.negate_co_object
+            elif self.location_negate_type == 'CANCEL':
+                nl = self.get_location_by_bone(self.location_negate_bone_name)
+                nl[0] = 0 if self.negate_cancel_x else nl[0]
+                nl[1] = 0 if self.negate_cancel_x else nl[1]
+                nl[2] = 0 if self.negate_cancel_x else nl[2]
 
             return self.influence_location * (nl - bl)
-
-    def get_rotation(self):
-        return self.get_rotation_by_bone(self.bone_name)
-
-    def get_rotation_correction(self):
-        reference = Quaternion(self.reference_rotation)
-        current = self.get_rotation()
-
-        diff = current.rotation_difference(reference)
-
-        correction = Quaternion().slerp(diff, self.influence_rotation)
-        return correction
-
-    def get_scale(self):
-        return self.get_scale_by_bone(self.bone_name)
-
-    def get_scale_correction(self):
-        return self.influence_scale * (self.get_scale() - self.reference_scale)
 
     def get_poll_alert(self, arm, bone):
         disconnected_bone_names = get_disconnected_bone_names(arm)

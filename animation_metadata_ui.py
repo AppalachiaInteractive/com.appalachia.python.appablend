@@ -1,28 +1,34 @@
-from cspy.animation_metadata import *
-from cspy.animation_metadata_ops import *
+import bpy
+from bpy.types import Menu, UIList
 from cspy.polling import POLL
 from cspy.ui import PT_OPTIONS, PT_, UI
+from cspy.animation_metadata import *
+from cspy.animation_metadata_ops import *
 
-class ANIMMETA_PT_SPLIT(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.DATA):
-    bl_label = 'Animation Splitting'
-    bl_icon = cspy.icons.IMGDISPLAY
+class AM_PT_AnimationMetadata():
+    bl_label = 'Animation Metadata'
+    bl_icon = cspy.icons.ANIM_DATA
 
     @classmethod
     def do_poll(cls, context):
-        return True
-        #return POLL.active_ARMATURE(context)
+        return POLL.active_ARMATURE_action(context)        
 
     def do_draw(self, context, scene, layout, obj):
-        obj.animation_split.draw(layout, context)
-        layout.operator(AS_OT_Split_Action_Via_Sheet.bl_idname)
+        action = obj.animation_data.action
 
+        action.animation_metadata.draw(context, layout)
+
+class VIEW_3D_PT_UI_Tool_AM_AnimationMetadata(UI.VIEW_3D.UI.Tool, AM_PT_AnimationMetadata, PT_, bpy.types.Panel):
+    bl_idname='VIEW_3D_UVIEW_3D_PT_UI_Tool_AM_AnimationMetadataI_Tool_AM_PT_AnimationMetadata'
+
+class DOPESHEET_EDITOR_PT_UI_AM_AnimationMetadata(UI.DOPESHEET_EDITOR.UI, AM_PT_AnimationMetadata, PT_, bpy.types.Panel):
+    bl_idname='DOPESHEET_EDITOR_PT_UI_AM_AnimationMetadata'
+
+class NLA_EDITOR_PT_UI_Tool_AM_AnimationMetadata(UI.NLA_EDITOR.UI.Tool, AM_PT_AnimationMetadata, PT_, bpy.types.Panel):
+    bl_idname='NLA_EDITOR_PT_UI_Tool_AM_AnimationMetadata'
 
 def register():
-    bpy.types.Object.animation_split = bpy.props.PointerProperty(type=AnimationSplit)
-    bpy.types.Object.animation_split_clips = bpy.props.CollectionProperty(type=AnimationClipMetadata)
-    bpy.types.Action.action_metadata = bpy.props.PointerProperty(type=ActionMetadata)
+    bpy.types.Action.animation_metadata = bpy.props.PointerProperty(name='Animation Metadata', type=AnimationMetadata)
 
 def unregister():
-    del bpy.types.Object.animation_split
-    del bpy.types.Object.animation_split_clips
-    del bpy.types.Action.action_metadata
+    del bpy.types.Action.animation_metadata

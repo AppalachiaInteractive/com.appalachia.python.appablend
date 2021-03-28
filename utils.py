@@ -1,5 +1,30 @@
 import bpy
 
+def copy_from_to(f, t):
+
+    from_props = set(dir(f))
+    to_props = set(dir(t))
+    common_props = from_props.intersection(to_props)
+
+    for prop in common_props:
+        if prop.startswith('_') or prop.startswith("bl_") or prop.startswith("rna_"):
+            continue
+        val = getattr(f, prop)
+
+        if callable(val):
+            continue
+
+        copy = getattr(val, 'copy_from', None)
+
+        if copy and callable(copy):
+            val_to = getattr(t, prop)
+            copy_to = getattr(val_to, 'copy_from', None)
+
+            copy_to(val)
+
+        else:
+            setattr(t, prop, val)       
+
 def get_logging_name(obj):
     try:
 
@@ -28,17 +53,14 @@ def create_enum(enum_items):
         return enums
 
 def create_enum_dict(enum_items):
-        keys = set()
-        for enum_item_key in enum_items:
-            key = enum_items[enum_item_key]
-            keys.add(key)
 
-        enums = []
-        for key in keys:
-            item = (key, '', '')
-            enums.append(item)
-
-        return enums
+    enums = []
+    for description in enum_items:
+        key = enum_items[description]
+        item = (key, description, description)
+        enums.append(item)
+        
+    return enums
 
 def enumerate_reversed(L):
    for index in reversed(range(len(L))):

@@ -1,5 +1,6 @@
 import bpy, cspy
 from bpy.types import Operator
+from cspy import empties_to_bone
 from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.empties_to_bone import *
@@ -39,7 +40,7 @@ class EB_OPS_():
             if not context.scene.eb_source_object:
                 context.scene.eb_source_object = context.active_object
 
-            _duplicate_armature()
+            cspy.empties_to_bone._duplicate_armature()
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
         finally:
@@ -53,7 +54,7 @@ class EB_OPS_():
             if not context.scene.eb_source_object:
                 context.scene.eb_source_object = context.active_object
 
-            _create_armature()
+            cspy.empties_to_bone._create_armature()
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
         finally:
@@ -67,7 +68,7 @@ class EB_OPS_():
             if not context.scene.eb_source_object:
                 context.scene.eb_source_object = context.active_object
 
-            _deconstruct_armature()
+            cspy.empties_to_bone._deconstruct_armature()
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
         finally:

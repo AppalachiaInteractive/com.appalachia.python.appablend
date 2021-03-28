@@ -3,6 +3,7 @@ import math
 from mathutils import Vector, Euler, Matrix
 import cspy
 from cspy import utils
+from cspy.bones import *
 
 
 TARGETS = ['ACTION', 'ACTION NAME', 'FILE', 'DIR']
@@ -96,17 +97,19 @@ def _initialize_armature():
     empties = [e for e in bpy.context.selected_objects if e.type == "EMPTY"]
     empties_names = [i.name for i in empties if i.type == "EMPTY"]
 
-    """ for e in empties.copy():
-        if not e.children or len(e.children) == 0:
-            bpy.ops.object.empty_add()
-            leaf = bpy.context.active_object
-            leaf.parent = e
-            leaf.location = Vector([0.0, 25.0, 0.0])
-            leaf.name = 'end.{0}'.format(e.name)
-            empties.append(leaf)
-            empties_names.append(leaf.name)
-            print(leaf.name) """
+    for e in empties.copy():
+        #if not e.children or len(e.children) == 0:
+        bpy.ops.object.empty_add()
+        leaf = bpy.context.active_object
+        leaf.parent = e
+        leaf.location = Vector([1.0, 0.0, 0.0])
+        leaf.name = 'end.{0}'.format(e.name)
+        empties.append(leaf)
+        empties_names.append(leaf.name)
 
+    if scn.eb_source_object:
+        cspy.utils.set_object_active(scn.eb_source_object)
+        
     # Create armature and bones
     # add a new armature
     empty = bpy.context.active_object
@@ -127,6 +130,9 @@ def _initialize_armature():
     bones_dict = {}
     for i, emp_name in enumerate(empties_names):
         emp = bpy.data.objects.get(emp_name)
+
+        if emp_name.startswith('end.'):
+            continue
 
         # store current action to automatically set baking length
         if i == 0:
@@ -292,6 +298,9 @@ def _create_norot_bones():
     # create a duplicate _NOROT bone chain in order to enable Inherit Rotation on the main one
     current_edit_bones = [e for e in bpy.context.active_object.data.edit_bones]
     for edit_bone in current_edit_bones:
+        if edit_bone.name.startswith('end.'):
+            continue
+
         new_bone = bpy.context.active_object.data.edit_bones.new(edit_bone.name+"_NOROT")
         new_bone.head, new_bone.tail, new_bone.roll, new_bone.use_connect = edit_bone.head.copy(), edit_bone.tail.copy(), edit_bone.roll, edit_bone.use_connect
         #new_bone.head, new_bone.tail, new_bone.roll = edit_bone.head.copy(), edit_bone.tail.copy(), edit_bone.roll
@@ -306,6 +315,39 @@ def _create_norot_bones():
             continue
         norot_bone = get_edit_bone(edit_bone.name+"_NOROT")
         norot_bone.parent = get_edit_bone(edit_bone.parent.name+"_NOROT")
+
+def _damped_tracking(bone, bone_NOROT):
+    if bone_NOROT.parent:
+        """ if len(bone_NOROT.children) == 0:
+            #print('no child damped track')
+            cns = bone_NOROT.constraints.new("DAMPED_TRACK")
+            cns.target = armature
+            cns.track_axis = 'TRACK_NEGATIVE_Y'
+            cns.subtarget = bone.parent.name """
+        if len(bone_NOROT.children) == 1:
+        #elif len(bone_NOROT.children) == 1:
+            #print('1 child damped track')
+            cns = bone_NOROT.constraints.new("DAMPED_TRACK")
+            cns_target_name = bone.children[0].name.replace('_NOROT', '')
+            cns_target = bpy.data.objects[cns_target_name]
+            cns.target = cns_target
+        elif 'pelvis' in bone_NOROT.name.lower():
+            #print('pelvis case')
+            child_spines = [c for c in bone_NOROT.children if 'spine' in c.name.lower() or 'spine' == c.name.lower()]
+            if child_spines and len(child_spines) == 1:
+                cns = bone_NOROT.constraints.new("DAMPED_TRACK")
+                cns.track_axis = 'TRACK_NEGATIVE_Y'
+                cns_target_name = child_spines[0].name.replace('_NOROT', '')
+                cns_target = bpy.data.objects[cns_target_name]
+                cns.target = cns_target
+        elif 'spine' in bone_NOROT.name.lower():
+            #print('spine case')
+            child_spines = [c for c in bone_NOROT.children if 'spine' in c.name.lower() or 'neck' in c.name.lower()]
+            if child_spines and len(child_spines) == 1:
+                cns = bone_NOROT.constraints.new("DAMPED_TRACK")
+                cns_target_name = child_spines[0].name.replace('_NOROT', '')
+                cns_target = bpy.data.objects[cns_target_name]
+                cns.target = cns_target
 
 def _constrain_bones(bones_dict):
     print("Constrain bones...")
@@ -333,37 +375,7 @@ def _constrain_bones(bones_dict):
             cns.target = emp
 
             #dont screw with root or pelvis bones
-            if bone_NOROT.parent:
-                """ if len(bone_NOROT.children) == 0:
-                    #print('no child damped track')
-                    cns = bone_NOROT.constraints.new("DAMPED_TRACK")
-                    cns.target = armature
-                    cns.track_axis = 'TRACK_NEGATIVE_Y'
-                    cns.subtarget = bone.parent.name """
-                if len(bone_NOROT.children) == 1:
-                #elif len(bone_NOROT.children) == 1:
-                    #print('1 child damped track')
-                    cns = bone_NOROT.constraints.new("DAMPED_TRACK")
-                    cns_target_name = bone.children[0].name.replace('_NOROT', '')
-                    cns_target = bpy.data.objects[cns_target_name]
-                    cns.target = cns_target
-                elif 'pelvis' in bone_NOROT.name.lower():
-                    #print('pelvis case')
-                    child_spines = [c for c in bone_NOROT.children if 'spine' in c.name.lower() or 'spine' == c.name.lower()]
-                    if child_spines and len(child_spines) == 1:
-                        cns = bone_NOROT.constraints.new("DAMPED_TRACK")
-                        cns.track_axis = 'TRACK_NEGATIVE_Y'
-                        cns_target_name = child_spines[0].name.replace('_NOROT', '')
-                        cns_target = bpy.data.objects[cns_target_name]
-                        cns.target = cns_target
-                elif 'spine' in bone_NOROT.name.lower():
-                    #print('spine case')
-                    child_spines = [c for c in bone_NOROT.children if 'spine' in c.name.lower() or 'neck' in c.name.lower()]
-                    if child_spines and len(child_spines) == 1:
-                        cns = bone_NOROT.constraints.new("DAMPED_TRACK")
-                        cns_target_name = child_spines[0].name.replace('_NOROT', '')
-                        cns_target = bpy.data.objects[cns_target_name]
-                        cns.target = cns_target
+            #_damped_tracking(bone, bone_norot)
         else:
             # original orientation, use copy constraints
             cns_loc = bone_NOROT.constraints.new("COPY_LOCATION")
@@ -382,6 +394,12 @@ def _constrain_bones(bones_dict):
         cns_copy = bone.constraints.new("COPY_TRANSFORMS")
         cns_copy.target = bpy.context.active_object
         cns_copy.subtarget = bone_NOROT.name
+
+        dt_cns = bone.constraints.new("DAMPED_TRACK")
+        target_empty_name = 'end.{0}'.format(emp.name)
+        target_empty = bpy.data.objects.get(target_empty_name)
+                
+        dt_cns.target = target_empty
 
 def _duplicate_armature():
     bones_dict = _initialize_armature()
@@ -484,7 +502,7 @@ def bake_anim(self, frame_start=0, frame_end=10, only_selected=False, bake_bones
     anim_data.action = action
 
     def store_keyframe(bone_name, prop_type, fc_array_index, frame, value):
-        fc_data_path  = cspy.bones.get_bone_data_path(bone.name, prop_type)
+        fc_data_path  = get_bone_data_path(pbone.name, prop_type)
         fc_key = (fc_data_path, fc_array_index)
         if not keyframes.get(fc_key):
             keyframes[fc_key] = []

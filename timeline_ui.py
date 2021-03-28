@@ -15,9 +15,9 @@ class TIMELINE_PT_Timeline:
         return True
 
     def do_draw(self, context, scene, layout, obj):
-        self.draw_timeline_buttons(layout)
+        self.draw_timeline_buttons(layout, context)
 
-    def draw_timeline_buttons(self, layout):
+    def draw_timeline_buttons(self, layout, context):
         box = layout.box()
         row = box.row(align=True)
         tool_settings = bpy.context.scene.tool_settings
@@ -42,9 +42,31 @@ class TIMELINE_PT_Timeline:
         row.operator(TIMELINE_OT_clamp_start_to_current.bl_idname, text='Start')
         row.operator(TIMELINE_OT_clamp_end_to_current.bl_idname, text='End')
         row.operator(TIMELINE_OT_clamp_to_action.bl_idname, text='Action')
+        row.operator(TIMELINE_OT_clamp_to_strip.bl_idname, text='Strip')
         row.operator(TIMELINE_OT_clamp_to_strips.bl_idname, text='Strips')
 
+        row = box.row(align=True)
 
+        if context.area.type == UI.DOPESHEET_EDITOR.bl_space_type:
+            row.operator('action.view_frame', text='Current')
+            row.operator(TIMELINE_OT_view_frame.bl_idname, text='Clip')
+            row.operator('action.view_selected', text='Selected')
+            row.operator('action.view_all', text='All')
+        elif context.area.type == UI.NLA_EDITOR.bl_space_type:
+            row.operator('nla.view_frame', text='Current')
+            row.operator(TIMELINE_OT_view_frame.bl_idname, text='Clip')
+            row.operator('nla.view_selected', text='Selected')
+            row.operator('nla.view_all', text='All')
+        else:
+            row.operator(TIMELINE_OT_view_frame.bl_idname, text='Current')
+            row.operator(TIMELINE_OT_view_frame.bl_idname, text='Clip')
+            row.operator(TIMELINE_OT_view_selected.bl_idname, text='Selected')
+            row.operator(TIMELINE_OT_view_all.bl_idname, text='All')
+        
+        row = box.row(align=True)
+        row.operator(TIMELINE_OT_select_keys.bl_idname, text='Select Keys (By Bone)').selected_bones = True        
+        row.operator(TIMELINE_OT_select_keys.bl_idname)
+    
 
 class TIMELINE_VIEW_3D_PT_UI_Tool_Timeline(TIMELINE_PT_Timeline, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
     bl_idname = "TIMELINE_VIEW_3D_PT_UI_Tool_Timeline"
@@ -52,8 +74,8 @@ class TIMELINE_VIEW_3D_PT_UI_Tool_Timeline(TIMELINE_PT_Timeline, UI.VIEW_3D.UI.T
 class TIMELINE_DOPESHEET_EDITOR_PT_UI_Timeline(TIMELINE_PT_Timeline, UI.DOPESHEET_EDITOR.UI, PT_, bpy.types.Panel):
     bl_idname = "TIMELINE_DOPESHEET_EDITOR_PT_UI_Timeline"
 
-class TIMELINE_ENLA_EDITOR_PT_UI_Tool_Timeline(TIMELINE_PT_Timeline, UI.NLA_EDITOR.UI.Tool, PT_, bpy.types.Panel):
-    bl_idname = "TIMELINE_ENLA_EDITOR_PT_UI_Tool_Timeline"
+class TIMELINE_NLA_EDITOR_PT_UI_Tool_Timeline(TIMELINE_PT_Timeline, UI.NLA_EDITOR.UI.Tool, PT_, bpy.types.Panel):
+    bl_idname = "TIMELINE_NLA_EDITOR_PT_UI_Tool_Timeline"
 
 class TIMELINE_VIEW_3D_PT_UI_Tool_ClearTransforms(TIMELINE_PT_Timeline, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
     bl_idname = "TIMELINE_VIEW_3D_PT_UI_Tool_ClearTransforms"

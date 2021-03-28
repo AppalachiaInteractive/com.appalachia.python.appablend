@@ -422,7 +422,11 @@ class PT_():
     @classmethod
     def poll(cls, context):
         try:
-            return cls.do_poll(context)
+            result = cls.do_poll(context)
+            if callable(result):
+                print('[EXCP] {0}:  [do_poll]  Must correct call [{1}]'.format(cspy.utils.get_logging_name(cls), result))
+                return False
+            return result
         except Exception as inst:
             print('{0}:  [do_poll]  {1}'.format(cspy.utils.get_logging_name(cls), inst))
             return False

@@ -4,8 +4,34 @@ from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.timeline import *
 
-class TIMELINE_OT_clamp_to_strips(OPS_, Operator):
+class TIMELINE_OT_clamp_to_strip(OPS_, Operator):
     """Clamps scene play region to selected strips"""
+    bl_idname = "timeline.clamp_to_strip"
+    bl_label = "Clamp To Strips"
+
+    @classmethod
+    def do_poll(cls, context):
+        return len(cspy.nla.get_selected_strips()) > 0
+
+    def do_execute(self, context):
+        clamp_to_strips(context)
+        return {'FINISHED'}
+
+class TIMELINE_OT_clamp_to_strip(OPS_, Operator):
+    """Clamps scene play region to selected strip"""
+    bl_idname = "timeline.clamp_to_strip"
+    bl_label = "Clamp To Strip"
+
+    @classmethod
+    def do_poll(cls, context):
+        return len(cspy.nla.get_selected_strips()) > 0
+
+    def do_execute(self, context):
+        clamp_to_strip(context)
+        return {'FINISHED'}
+
+class TIMELINE_OT_clamp_to_strips(OPS_, Operator):
+    """Clamps scene play region to strips"""
     bl_idname = "timeline.clamp_to_strips"
     bl_label = "Clamp To Strips"
 
@@ -17,10 +43,15 @@ class TIMELINE_OT_clamp_to_strips(OPS_, Operator):
         clamp_to_strips(context)
         return {'FINISHED'}
 
+class TIMELINE_OP_SCENE:
+    @classmethod
+    def do_poll(cls, context):
+        return True
+
 class TIMELINE_OP:
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_action
+        return POLL.active_object_action(context)
 
 class TIMELINE_OT_clamp_to_action(TIMELINE_OP, OPS_, Operator):
     """Clamps scene play region to selected action"""
@@ -31,7 +62,7 @@ class TIMELINE_OT_clamp_to_action(TIMELINE_OP, OPS_, Operator):
         clamp_to_action(context)
         return {'FINISHED'}
 
-class TIMELINE_OT_clamp_start_to_current(TIMELINE_OP, OPS_, Operator):
+class TIMELINE_OT_clamp_start_to_current(TIMELINE_OP_SCENE, OPS_, Operator):
     """Clamps scene play region start to current frame"""
     bl_idname = "timeline.clamp_start_to_current"
     bl_label = "Clamp Start To Current"
@@ -40,7 +71,7 @@ class TIMELINE_OT_clamp_start_to_current(TIMELINE_OP, OPS_, Operator):
         clamp_timeline_start_to_current(context)
         return {'FINISHED'}
 
-class TIMELINE_OT_clamp_end_to_current(TIMELINE_OP, OPS_, Operator):
+class TIMELINE_OT_clamp_end_to_current(TIMELINE_OP_SCENE, OPS_, Operator):
     """Clamps scene play region end to current frame"""
     bl_idname = "timeline.clamp_end_to_current"
     bl_label = "Clamp End To Current"
@@ -187,3 +218,113 @@ class TIMELINE_OT_next_clip(TIMELINE_OP, OPS_, Operator):
         context.scene.frame_end = get_next_notable_frame_from_end(context, action)
         context.scene.frame_current = context.scene.frame_start
         return {'FINISHED'}
+
+class TIMELINE_OT_view:
+    @classmethod
+    def do_poll(cls, context):
+        return True
+    
+    def do_execute(self, context):
+        for window in context.window_manager.windows:
+            screen = window.screen
+            for area in screen.areas:
+                for region in area.regions:
+
+                    override = {'window': window, 'screen': screen, 'area': area, 'region': region}
+                    self.do_apply(context, override)
+
+        return {'FINISHED'}
+    
+class TIMELINE_OT_view_frame(OPS_, TIMELINE_OT_view, Operator):
+    """Clamp all areas to the current frame."""
+    bl_idname = "timeline.view_frame"
+    bl_label = "View Frame"
+
+    def do_apply(self, context, override):
+        if override['area'].type == 'DOPESHEET_EDITOR':     
+            bpy.ops.action.view_frame(override)
+        elif override['area'].type == 'NLA_EDITOR':            
+            bpy.ops.nla.view_frame(override)
+
+class TIMELINE_OT_view_clip(OPS_, TIMELINE_OT_view, Operator):
+    """Clamp all areas to the current clip."""
+    bl_idname = "timeline.view_clip"
+    bl_label = "View Clip"
+
+    def do_apply(self, context, override):
+        f = context.scene.frame_current
+        s = context.scene.frame_start
+        e = context.scene.frame_end
+    
+        context.scene.frame_current = (s + e) / 2
+
+        if override['area'].type == 'DOPESHEET_EDITOR':     
+            bpy.ops.action.view_frame(override)
+        elif override['area'].type == 'NLA_EDITOR':            
+            bpy.ops.nla.view_frame(override)
+        
+        context.scene.frame_current = f
+
+class TIMELINE_OT_view_selected(OPS_, TIMELINE_OT_view, Operator):
+    """Clamp all areas to the selected range."""
+    bl_idname = "timeline.view_selected"
+    bl_label = "View Selected"
+
+    def do_apply(self, context, override):
+        if override['area'].type == 'DOPESHEET_EDITOR':     
+            bpy.ops.action.view_selected(override)
+        elif override['area'].type == 'NLA_EDITOR':            
+            bpy.ops.nla.view_selected(override)
+
+class TIMELINE_OT_view_all(OPS_, TIMELINE_OT_view, Operator):
+    """Clamp all areas to the full key range."""
+    bl_idname = "timeline.view_all"
+    bl_label = "View All"
+
+    def do_apply(self, context, override):
+        if override['area'].type == 'DOPESHEET_EDITOR':     
+            bpy.ops.action.view_all(override)
+        elif override['area'].type == 'NLA_EDITOR':            
+            bpy.ops.nla.view_all(override)
+    
+class TIMELINE_OT_select_keys(OPS_, Operator):
+    """Select keys in current range."""
+    bl_idname = "timeline.select_keys"
+    bl_label = "Select Keys"
+
+    selected_bones: bpy.props.BoolProperty(name='Selected Bones')
+
+    @classmethod
+    def do_poll(cls, context):
+        return POLL.active_object_action(context)
+
+    def do_execute(self, context):
+        obj = context.active_object
+        action = obj.animation_data.action
+        s = context.scene.frame_start
+        e = context.scene.frame_end
+
+        bones = []
+        for bone in obj.data.bones:
+            if bone.select:
+                bones.append(bone.name)
+
+        for fcurve in action.fcurves:
+
+            found = False
+            for bone in bones:
+                if 'pose.bones["{0}"].'.format(bone) in fcurve.data_path:
+                    found = True
+                    break
+
+            if not found:
+                continue
+
+            for key in fcurve.keyframe_points:
+                f = key.co[0]
+                key.select_control_point = f >= s and f <= e
+                
+            
+
+        
+    

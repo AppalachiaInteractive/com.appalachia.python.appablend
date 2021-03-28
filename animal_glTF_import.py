@@ -2,6 +2,7 @@ import bpy
 import cspy
 from os import walk
 
+from cspy.bones import *
 
 
 def assign_empty_action_to_bone_action(empty, target_action):
@@ -11,7 +12,7 @@ def assign_empty_action_to_bone_action(empty, target_action):
 
     for current_fcurve in current_action.fcurves:
 
-        new_curve_name = cspy.bones.get_bone_data_path(empty.name, current_fcurve.data_path)
+        new_curve_name = get_bone_data_path(empty.name, current_fcurve.data_path)
 
         new_curve = action.fcurves.new(new_curve_name, current_fcurve.index, new_group.name)
 

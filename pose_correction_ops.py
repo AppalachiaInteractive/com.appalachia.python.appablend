@@ -5,6 +5,7 @@ from cspy.ops import *
 from cspy.polling import POLL
 from cspy.bones import *
 from cspy.pose_correction import *
+from cspy.actions import *
 
 class PC_OP:
     @classmethod
@@ -17,6 +18,27 @@ class PC_OP:
 
         pose_correction.bone_name = bone.name
         return self.bone_execute(context, bone, pose_correction)
+
+class PC_OT_insert_anchor_keyframe(PC_OP, OPS_, Operator):
+    """Inserts a keyframe for the referenced bones as an anchor."""
+    bl_idname = "pc.insert_anchor_keyframe"
+    bl_label = "Insert Anchor"
+
+    def bone_execute(self, context, bone, pose_correction):
+        arm = context.active_object
+        frame = context.scene.frame_current
+        
+        if pose_correction.location_correction_type == 'NEGATE':
+            action = arm.animation_data.action
+
+            for fcurve in action.fcurves:
+                value = fcurve.evaluate(frame)
+                insert_keyframe(fcurve, frame, value, replace=False, needed=False, fast=True, keyframe_type=KEYFRAME.KEYFRAME)
+
+            for fcurve in action.fcurves:
+                fcurve.update()
+
+        return {'FINISHED'}
 
 class PC_OT_record_reference_location_from_bone(PC_OP, OPS_, Operator):
     """Record bone reference location from 3D position."""

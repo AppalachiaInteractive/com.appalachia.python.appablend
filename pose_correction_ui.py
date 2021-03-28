@@ -23,7 +23,6 @@ class VIEW_3D_PT_Pose_Correction(_PT_PC_, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Pan
         if bone:
             layout.label(text=bone.name,icon=cspy.icons.BONE_DATA)
 
-
 class _PT_PC_AB:
     @classmethod
     def do_poll(cls, context):
@@ -41,10 +40,13 @@ class VIEW_3D_PT_Pose_Correction_01_LOC(_PT_PC_AB, UI.VIEW_3D.UI.Tool, PT_, bpy.
         bone = context.active_pose_bone
         pose_correction = bone.pose_correction
         
-        layout.prop(pose_correction, 'location_correction_type')
+        row = layout.row(align=True)
+        #row.alignment = 'EXPAND'
+
+        row.prop(pose_correction, 'location_correction_type', text='Correction')
 
         row = layout.row(align=True)
-        row.alignment = 'RIGHT'
+        #row.alignment = 'EXPAND'
 
         alerting = pose_correction.get_poll_alert(arm, bone)
         valid = pose_correction.get_poll_valid(context)
@@ -65,15 +67,31 @@ class VIEW_3D_PT_Pose_Correction_01_LOC(_PT_PC_AB, UI.VIEW_3D.UI.Tool, PT_, bpy.
 
         elif pose_correction.location_correction_type == 'NEGATE':
 
-            row.alert = alerting
-            row.label(text='Negate Bone')
-            row.prop_search(pose_correction, 'location_negate_bone_name', pose, 'bones', text='')
+            row.prop(pose_correction, 'location_negate_type')
+
+            nt = pose_correction.location_negate_type
+
+            if nt == 'OFFSET' or nt == 'EXACT':        
+                row = layout.row()
+                row.alert = alerting
+                row.prop_search(pose_correction, 'location_negate_bone_name', pose, 'bones', text='Bone')
+            
+            row = layout.row()
+
+            if nt == 'OFFSET':
+                row.prop(pose_correction, 'negate_co_offset', text='')
+            elif nt == 'OBJECT':
+                row.prop(pose_correction, 'negate_co_object', text='')
+            elif nt == 'CANCEL':
+                row.prop(pose_correction, 'negate_cancel_x', toggle=True, text='X')
+                row.prop(pose_correction, 'negate_cancel_y', toggle=True, text='Y')
+                row.prop(pose_correction, 'negate_cancel_z', toggle=True, text='Z')
 
         box = layout.box()
 
         row = box.row(align=True)
-        row.label(text="Location")
         row.prop(pose_correction, 'influence_location')
+        row.operator(PC_OT_insert_anchor_keyframe.bl_idname)
 
         row = box.row(align=True)
         row.alert = alerting
@@ -87,6 +105,7 @@ class VIEW_3D_PT_Pose_Correction_01_LOC(_PT_PC_AB, UI.VIEW_3D.UI.Tool, PT_, bpy.
         
         rwall.loop, rwall.advance, rwall.forward = True,  True,  False
         rw.loop,    rw.advance,    rw.forward = False, True,  False
+        cur.loop,   cur.advance,   cur.forward = False, False,  False
         ff.loop,    ff.advance,    ff.forward = False, True,  True
         ffall.loop, ffall.advance, ffall.forward = True,  True,  True
 

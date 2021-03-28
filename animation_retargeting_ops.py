@@ -385,7 +385,7 @@ class AR_Update_Cache(OPS_, AR_OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return cls.poll_update
+        return cls.poll_update(context)
 
     def do_execute(self, context):
         cls = AR_OPS_
@@ -400,7 +400,7 @@ class AR_Clear_Cache(OPS_, AR_OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return cls.poll_clear
+        return cls.poll_clear(context)
 
     def do_execute(self, context):
         cls = AR_OPS_
@@ -415,7 +415,7 @@ class AR_Debug_Cache(OPS_, AR_OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return cls.poll_debug
+        return cls.poll_debug(context)
 
     def do_execute(self, context):
         cls = AR_OPS_
@@ -431,7 +431,7 @@ class AR_Restore_Cache(OPS_, AR_OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return cls.poll_debug
+        return cls.poll_debug(context)
 
     def do_execute(self, context):
         cls = AR_OPS_

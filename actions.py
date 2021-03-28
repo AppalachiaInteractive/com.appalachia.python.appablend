@@ -2,6 +2,9 @@ import bpy
 import cspy
 import mathutils, math
 from mathutils import Vector, Matrix, Quaternion, Euler
+from cspy import iters, unity, unity_clips
+from cspy.bones import *
+from cspy.unity_clips import *
 
 class INTERPOLATION:
     """Constant, No interpolation, value of A gets held until B is encountered"""
@@ -250,7 +253,7 @@ def clean_fcurves(action):
     if len(valid_pose_bone_paths) == 0:
         for bone_name in valid_bone_names:
             for valid_data_path in valid_data_paths:
-                path = cspy.bones.get_bone_data_path(bone_name, valid_data_path)
+                path = get_bone_data_path(bone_name, valid_data_path)
                 valid_pose_bone_paths.add(path)
 
     removals = []
@@ -278,60 +281,86 @@ def clean_fcurves(action):
             action.fcurves.remove(removal)
 
 def group_actions_by_bone():
+    bone_names = set()
     for armature in bpy.data.armatures:
-        for action in bpy.data.actions:
-            for bone in armature.bones:
-                for fcurve in action.fcurves:
-                    if fcurve.data_path.startswith(cspy.bones.get_bone_data_path(bone.name, '')):
-                        if bone.name in action.groups:
-                            group = action.groups[bone.name]
-                        else:
-                            group = action.groups.new(bone.name)
-                        fcurve.group = group
+        for bone in armature.bones:
+            bone_names.add(bone.name)
+    
+    bone_paths = []
+    for bone_name in bone_names:
+        bone_paths.append((bone_name, get_bone_data_path(bone_name, '')))
 
-def group_actions_by_bone():
-    for armature in bpy.data.armatures:
-        for action in bpy.data.actions:
-            for bone in armature.bones:
-                for fcurve in action.fcurves:
-                    if fcurve.data_path.startswith(data_path_from_bone(bone.name)):
-                        if bone.name in action.groups:
-                            group = action.groups[bone.name]
-                        else:
-                            group = action.groups.new(bone.name)
-                        fcurve.group = group
+    for action in bpy.data.actions:
+        for fcurve in action.fcurves:
+            for bone_name, bone_path in bone_paths:                    
+                if fcurve.group and fcurve.group.name in bone_names:
+                    continue
+                if not fcurve.data_path.startswith(bone_path):
+                    continue          
 
-def split_action(master_action, new_action_name, start, end):
-    new_action = master_action.copy()
+                if bone_name in action.groups:
+                    group = action.groups[bone_name]
+                else:
+                    group = action.groups.new(bone_name)
+                fcurve.group = group
+
+def split_action(master_action, new_action_name, old_clip_name, new_clip_name, start, end):
+
+    new_action = bpy.data.actions.new(new_action_name)    
+    master_action.use_fake_user = True
     new_action.use_fake_user = True
-    new_action.name = new_action_name
-    print('Splitting action {0} to create action {1} - frame {2} to frame {3}'.format(
-        master_action.name, new_action.name, start, end
+    
+    frame_shift = start - 1
+
+    new_clip = UnityClipMetadata.handle_split(master_action, new_action, old_clip_name, new_clip_name, frame_shift)
+
+    new_start = new_clip.frame_start
+    new_end = new_clip.frame_end
+
+    print('SPLIT: [{0}] to [{1}] - [{2}-{3}] >> [{4}-{5}]'.format(
+        master_action.name, new_action.name, start, end, new_start, new_end
     ))
 
-    for curve in new_action.fcurves:
+    new_action = copy_from_action_range(master_action, new_action, start, end, frame_shift)
+    
+    new_clip.full_frame_range()
+
+def copy_from_action_range(master_action, new_action, start, end, frame_shift):
+    
+    for index in cspy.iters.reverse_index(new_action.fcurves):
+        fcurve = new_action.fcurves[index]
+        new_action.fcurves.remove(fcurve)
+
+    for curve in master_action.fcurves:
+
+        if curve.group:
+            group_name = curve.group.name
+        else:
+            group_name = ''
+
+        new_curve = new_action.fcurves.new(curve.data_path, index=curve.array_index, action_group=group_name)
+
         value_start = curve.evaluate(start)
         value_end = curve.evaluate(end)
-        curve.keyframe_points.insert(start, value_start, options={'NEEDED','FAST'})
-        curve.keyframe_points.insert(end, value_end, options={'NEEDED','FAST'})
+        new_start = start - frame_shift
+        new_end = end - frame_shift
 
+        new_curve.keyframe_points.insert(new_start, value_start, options={'FAST'})
+        new_curve.keyframe_points.insert(new_end, value_end, options={'FAST'})    
+   
         for key in curve.keyframe_points:
-            key.co[0] -= start
-            key.handle_left[0] -= start
-            key.handle_right[0] -= start
+            f = key.co[0]
+            v = key.co[1]
 
-        curve.update()
+            if f < start or f > end:
+                continue
+            
+            nf = f - frame_shift
 
-        key_start = 0
-        key_end = key_start + (end - start)
+            new_curve.keyframe_points.insert(nf, v, options={'FAST'})
 
-        for idx, key in cspy.utils.enumerate_reversed(curve.keyframe_points):
-            key = curve.keyframe_points[idx]
-            frame = key.co[0]
-            if frame < key_start or frame > key_end:
-                curve.keyframe_points.remove(key, fast=True)
-
-        curve.update()
+    for new_curve in new_action.fcurves:        
+        new_curve.update()
 
     return new_action
 
@@ -378,7 +407,7 @@ def integrate_empties_action_into_bones(obj_names, master_name):
                 continue
 
             for fcurve in action.fcurves:
-                fcurve_data_path = cspy.bones.get_bone_data_path(action_set_key, fcurve.data_path)
+                fcurve_data_path = get_bone_data_path(action_set_key, fcurve.data_path)
                 new_fcurve = master_action.fcurves.new(fcurve_data_path, index=fcurve.array_index)
 
                 new_fcurve.keyframe_points.add(len(fcurve.keyframe_points))
@@ -397,7 +426,7 @@ def integrate_empties_action_into_bones(obj_names, master_name):
 
         for fcurve in action.fcurves:
             if not fcurve.data_path.startswith('pose.bones'):
-                fcurve.data_path = cspy.bones.get_bone_data_path(master_name, fcurve.data_path)
+                fcurve.data_path = get_bone_data_path(master_name, fcurve.data_path)
 
 def update_rotations_to_quat(obj, path_check, new_data_path_prefix=''):
 

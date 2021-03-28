@@ -221,7 +221,7 @@ class ACT_OT_combine_all_actions(OPS_, Operator):
         if master_action_name in bpy.data.actions:
             master_action = bpy.data.actions['MASTER']
 
-            master_action.unity_clips_protected = True
+            master_action.unity_metadata.clips_protected = True
             master_action.unity_clips.clear()
             for group in reversed(master_action.groups):
                 master_action.groups.remove(group)
