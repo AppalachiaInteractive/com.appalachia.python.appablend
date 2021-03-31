@@ -69,27 +69,27 @@ class POLL:
     @classmethod
     def active_object_unity_clips(cls, context):
         return POLL.active_object_action(context) and context.active_object.animation_data.action.unity_clips #and len(context.active_object.animation_data.action.unity_clips) > 0
-        
+
     @classmethod
     def active_object_unity_clips_none(cls, context):
         return POLL.active_object_action(context) and context.active_object.animation_data.action.unity_clips and len(context.active_object.animation_data.action.unity_clips) == 0
-        
+
     @classmethod
     def active_object_unity_clips_one(cls, context):
         return POLL.active_object_action(context) and context.active_object.animation_data.action.unity_clips and len(context.active_object.animation_data.action.unity_clips) == 1
-        
+
     @classmethod
     def active_object_unity_clips_some(cls, context):
         return POLL.active_object_action(context) and context.active_object.animation_data.action.unity_clips and len(context.active_object.animation_data.action.unity_clips) > 0
-        
+
     @classmethod
     def active_object_unity_clips_multiple(cls, context):
         return POLL.active_object_unity_clips(context) and len(context.active_object.animation_data.action.unity_clips) > 1
-   
+
     @classmethod
-    def active_object_unity_clips_split(cls, context):        
+    def active_object_unity_clips_split(cls, context):
         return POLL.active_object_unity_clips_one(context) and context.active_object.animation_data.action.unity_clips[0].source_action is not None
-      
+
     @classmethod
     def active_ARMATURE(cls, context):
         return POLL.active_object_type(context, OBJECT_TYPES.ARMATURE)

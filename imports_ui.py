@@ -19,7 +19,7 @@ class IMPORT_PANEL:
 
         col = layout.column(align=True)
         row = col.row(align=True)
- 
+
         row.prop(unity_settings, 'mode')
 
         row.prop(unity_settings, 'draw_sheets', toggle=True, text='', icon=unity_settings.icon_sheets)
@@ -40,6 +40,6 @@ class VIEW_3D_PT_UI_Tool_Import(IMPORT_PANEL, PT_, UI.VIEW_3D.UI.Tool, bpy.types
 
 def register():
     bpy.types.Scene.import_dir = bpy.props.StringProperty(name="Import Directory", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
-    
+
 def unregister():
     del bpy.types.Scene.import_dir

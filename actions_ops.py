@@ -61,6 +61,8 @@ class ACT_Multiple_Action_Op:
         if obj and obj.animation_data:
             original_action = obj.animation_data.action
 
+        self.start(context)
+
         for action in bpy.data.actions:
             self.exec(context, action)
 
@@ -70,6 +72,9 @@ class ACT_Multiple_Action_Op:
             obj.animation_data.action = original_action
 
         return {'FINISHED'}
+
+    def start(self, context):
+        pass
 
     def finish(self, context):
         pass
@@ -378,3 +383,64 @@ class ACT_OT_keyframe_type_all(ACT_Multiple_Action_Op, OPS_, Operator):
     def exec(self, context, action):
         change_keyframe_type(action, self.keyframe_type)
         return {'FINISHED'}
+
+class ACT_OT_delete_bone_all(OPS_, ACT_Multiple_Action_Op, Operator):
+    """Delete bone and update all actions"""
+    bl_idname = "act.delete_bone_all"
+    bl_label = "Delete Bone (All)"
+
+    @classmethod
+    def do_poll(cls, context):
+        return ACT_Multiple_Action_Op.do_poll(context) and POLL.active_ARMATURE_AND_BONES(context)
+
+    def exec(self, context, action):
+        scene = context.scene
+        obj = context.active_object
+        selected_bone_names = list([bone.name for bone in obj.data.bones if bone.select])
+
+        for bone_name in selected_bone_names:
+            path_prefix = get_bone_data_path(bone_name, '')
+
+            for index, fcurve in cspy.iters.reverse_enumerate(action.fcurves):
+                if fcurve.data_path.startswith(path_prefix):
+                    action.fcurves.remove(fcurve)
+
+    def finish(self, context):
+        obj = context.active_object
+        selected_bone_names = list([bone.name for bone in obj.data.bones if bone.select])
+
+        cspy.bones.remove_bones(obj, selected_bone_names)
+
+
+class ACT_OT_rename_bone_all(OPS_, ACT_Multiple_Action_Op, Operator):
+    """Rename bone and update all actions"""
+    bl_idname = "act.rename_bone_all"
+    bl_label = "Rename Bone (All)"
+
+    old: bpy.props.StringProperty(name="Old Name")
+    new: bpy.props.StringProperty(name="New Name")
+
+    @classmethod
+    def do_poll(cls, context):
+        return ACT_Multiple_Action_Op.do_poll(context) and POLL.active_ARMATURE_AND_BONES(context)
+
+    def exec(self, context, action):
+        scene = context.scene
+        obj = context.active_object
+
+        path_old = get_bone_data_path(self.old, '')
+        path_new = get_bone_data_path(self.new, '')
+
+        for group in action.groups:
+            group.name = group.name.replace(self.old, self.new)
+
+        for index, fcurve in cspy.iters.reverse_enumerate(action.fcurves):
+            fcurve.data_path = fcurve.data_path.replace(path_old, path_new)
+
+    def finish(self, context):
+        obj = context.active_object
+
+        for bone in obj.data.bones:
+            if bone.name == self.old:
+                bone.name = self.new
+                break

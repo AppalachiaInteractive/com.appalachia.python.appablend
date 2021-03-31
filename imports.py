@@ -27,28 +27,28 @@ def import_gltf(
     return bpy.context.selected_objects
 
 def import_fbx(
-    filepath="", 
-    filter_glob="*.fbx;*.dae;*.obj;*.dxf;*.3ds", 
-    files=[], 
-    use_auto_bone_orientation=True, 
-    my_calculate_roll='None', 
+    filepath="",
+    filter_glob="*.fbx;*.dae;*.obj;*.dxf;*.3ds",
+    files=[],
+    use_auto_bone_orientation=True,
+    my_calculate_roll='None',
     my_bone_length=10,
-    my_leaf_bone='Short', 
-    use_fix_attributes=False, 
-    use_only_deform_bones=False, 
-    use_vertex_animation=True, 
-    use_animation=True, 
-    use_triangulate=False, 
+    my_leaf_bone='Short',
+    use_fix_attributes=False,
+    use_only_deform_bones=False,
+    use_vertex_animation=True,
+    use_animation=True,
+    use_triangulate=False,
     my_import_normal='Calculate',
-    use_auto_smooth=True, 
+    use_auto_smooth=True,
     my_angle=60,
     my_shade_mode='Smooth',
-    my_scale=0.01, 
-    use_optimize_for_blender=True, 
-    use_edge_crease=True, 
+    my_scale=0.01,
+    use_optimize_for_blender=True,
+    use_edge_crease=True,
     my_edge_crease_scale=1):
 
-    bpy.ops.better_import.fbx(     
+    bpy.ops.better_import.fbx(
     filepath=filepath,
     filter_glob=filter_glob,
     files=files,
@@ -73,7 +73,7 @@ def import_fbx(
 
     return bpy.context.selected_objects
 
-""" 
+"""
 def import_fbx(
     filepath='',
     directory='',

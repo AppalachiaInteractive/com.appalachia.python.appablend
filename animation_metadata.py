@@ -6,129 +6,163 @@ from cspy import subtypes, utils, animation_metadata_enums
 from cspy.animation_metadata_enums import *
 import math
 
-class NameTemplate:   
+class NameTemplate:
     _TK_SEP_TOP = '_'
     _TK_SEP_SUB = '-'
 
-    TK_MASK   = '[MASK]'
-    TK_ENV_S  = '[ENVIRONMENT-START]'
-    TK_ENV_E  = '[ENVIRONMENT-END]'
-    TK_STATE_S  = '[STATE-START]'
-    TK_STATE_E  = '[STATE-END]'
-    TK_SUBS_S = '[SUBSTATE-START]'
-    TK_SUBS_E = '[SUBSTATE-END]'
-    TK_DIR    = '[DIRECTION]'
-    TK_ORI_E  = '[ORIENTATION-END]'
-    TK_RMIP   = '[ROOT MOTION/IN PLACE]'
-    TK_VARI   = '[VARIATION #]'
-    TK_DFFL   = '[DEFAULT/FLIPPED]'
-    TK_STGE   = '[STAGE]'
-    TK_FLEN   = '[FRAME LENGTH]'
+    TK_ACTOR   = '[ACTOR]'
+    TK_MASK    = '[MASK]'
+    TK_ENV_S   = '[ENVIRONMENT-START]'
+    TK_CAT_S   = '[CATEGORY-START]'
+    TK_POSE_S  = '[POSE-START]'
+    TK_SUBS    = '[SUBSTATE]'
+    TK_DIR     = '[DIRECTION]'
+    TK_RMIP    = '[ROOT MOTION/IN PLACE]'
+    TK_ORI_E   = '[ORIENTATION-END]'
+    TK_ENV_E   = '[ENVIRONMENT-END]'
+    TK_CAT_E   = '[CATEGORY-END]'
+    TK_POSE_E  = '[POSE-END]'
+    TK_VARI    = '[VARIATION #]'
+    TK_DFFL    = '[DEFAULT/FLIPPED]'
+    TK_STGE    = '[STAGE]'
+    TK_FLEN    = '[FRAME LENGTH]'
 
-    _TKC_ENV      = _TK_SEP_SUB.join( [TK_ENV_S, TK_ENV_E] )
-    _TKC_STATE      = _TK_SEP_SUB.join( [TK_STATE_S, TK_SUBS_S, TK_STATE_E, TK_SUBS_E] )
     _TKC_VARIATION     = 'v{0}'.format(_TK_SEP_SUB.join( [TK_VARI, TK_DFFL] ))
     _TKC_FRAME_LENGTH  = 'F{0}'.format(TK_FLEN)
 
     _TEMPLATE_KEYS = [
+        TK_ACTOR,
         TK_MASK,
-        _TKC_ENV,
-        _TKC_STATE,
-        TK_DIR, 
-        TK_ORI_E,
+        TK_ENV_S,
+        TK_CAT_S,
+        TK_POSE_S,
+        TK_SUBS,
+        TK_DIR,
         TK_RMIP,
+        TK_ORI_E,
+        TK_ENV_E,
+        TK_CAT_E,
+        TK_POSE_E,
         _TKC_VARIATION,
-        TK_STGE, 
+        TK_STGE,
         _TKC_FRAME_LENGTH
     ]
 
     TEMPLATE= _TK_SEP_TOP.join(_TEMPLATE_KEYS)
-    
+
 class Constants:
     ICON_PANEL = 'IMGDISPLAY'
     ICON_SHEET = "FILE_BLANK"
 
 class AnimationMetadataBase():
-    environment_start: bpy.props.EnumProperty(name='Environment', items=ENVIRONMENTS_ENUM, default=ENVIRONMENTS_ENUM_DEF)
+
+    envs = AM_ENVS()
+
+    def _get_actors_enum(self, context):
+        return self.envs.actors_enum.ENUM
+
+    def _get_env_start_enum(self, context):
+        return self.envs.env_enum.ENUM
+
+    def _get_env_end_enum(self, context):
+        return self.envs.env_enum.ENUM
+
+    def _get_category_start_enum(self, context):
+        e = self.environment_start
+        if e == '':
+            return []
+        return self.envs.envs[e].category_enum.ENUM
+
+    def _get_category_end_enum(self, context):
+        e = self.environment_end if self.changes_environment else self.environment_start
+        if e == '':
+            return []
+        return self.envs.envs[e].category_enum.ENUM
+
+    def _get_mask_enum(self, context):
+        e = self.environment_start
+        c = self.category_start
+        if e == '' or c == '':
+            return []
+        return self.envs.envs[e].categories[c].mask_enum.ENUM
+
+    def _get_stage_enum(self, context):
+        e = self.environment_start
+        c = self.category_start
+        if e == '' or c == '':
+            return []
+        return self.envs.envs[e].categories[c].stage_enum.ENUM
+
+    def _get_pose_start_enum(self, context):
+        e = self.environment_start
+        c = self.category_start
+        if e == '' or c == '':
+            return []
+        return self.envs.envs[e].categories[c].pose_enum.ENUM
+
+    def _get_pose_end_enum(self, context):
+        e = self.environment_end if self.changes_environment else self.environment_start
+        c = self.category_end if self.changes_category else self.category_start
+        if e == '' or c == '':
+            return []
+        return self.envs.envs[e].categories[c].pose_enum.ENUM
+
+    def _get_substate_enum(self, context):
+        e = self.environment_start
+        c = self.category_start
+        p = self.pose_start
+        if e == '' or c == '' or p == '':
+            return []
+        return self.envs.envs[e].categories[c].poses[p].substate_enum.ENUM
+
+    def _get_direction_enum(self, context):
+        e = self.environment_start
+        c = self.category_start
+        p = self.pose_start
+        if e == '' or c == '' or p == '':
+            return []
+        return self.envs.envs[e].categories[c].poses[p].direction_enum.ENUM
+
+    actor: bpy.props.EnumProperty(name='Actor', items=_get_actors_enum, default=0)
+
+    environment_start: bpy.props.EnumProperty(name='Environment', items=_get_env_start_enum, default=0)
     changes_environment: bpy.props.BoolProperty(name='Changes?', default=False)
-    environment_end: bpy.props.EnumProperty(name='End', items=ENVIRONMENTS_ENUM, default=ENVIRONMENTS_ENUM_DEF)
+    environment_end: bpy.props.EnumProperty(name='End', items=_get_env_end_enum, default=0)
 
-    state_start: bpy.props.EnumProperty(name='State', items=STATES_ENUM, default=STATES_ENUM_DEF)
-    changes_state: bpy.props.BoolProperty(name='Changes?', default=False)    
-    state_end: bpy.props.EnumProperty(name='End', items=STATES_ENUM, default=STATES_ENUM_DEF)
+    category_start: bpy.props.EnumProperty(name='Category', items=_get_category_start_enum, default=0)
+    changes_category: bpy.props.BoolProperty(name='Changes?', default=False)
+    category_end: bpy.props.EnumProperty(name='End', items=_get_category_end_enum, default=0)
 
-    changes_substate: bpy.props.BoolProperty(name='Changes?', default=False)
-    IDLE_substate_start: bpy.props.EnumProperty(name='Substate', items=IDLE_SUBSTATES_ENUM, default=IDLE_SUBSTATES_ENUM_DEF)    
-    IDLE_substate_end: bpy.props.EnumProperty(name='End', items=IDLE_SUBSTATES_ENUM, default=IDLE_SUBSTATES_ENUM_DEF)
+    mask: bpy.props.EnumProperty(name='Mask', items=_get_mask_enum, default=0)
 
-    SITT_substate_start: bpy.props.EnumProperty(name='Substate', items=SITT_SUBSTATES_ENUM, default=SITT_SUBSTATES_ENUM_DEF)
-    SITT_substate_end: bpy.props.EnumProperty(name='End', items=SITT_SUBSTATES_ENUM, default=SITT_SUBSTATES_ENUM_DEF)
+    stage: bpy.props.EnumProperty(name='Stage', items=_get_stage_enum, default=0)
 
-    LYNG_substate_start: bpy.props.EnumProperty(name='Substate', items=LYNG_SUBSTATES_ENUM, default=LYNG_SUBSTATES_ENUM_DEF)
-    LYNG_substate_end: bpy.props.EnumProperty(name='End', items=LYNG_SUBSTATES_ENUM, default=LYNG_SUBSTATES_ENUM_DEF)
+    pose_start: bpy.props.EnumProperty(name='Pose', items=_get_pose_start_enum, default=0)
+    changes_pose: bpy.props.BoolProperty(name='Changes?', default=False)
+    pose_end: bpy.props.EnumProperty(name='End', items=_get_pose_end_enum, default=0)
 
-    MOVE_substate_start: bpy.props.EnumProperty(name='Substate', items=MOVE_SUBSTATES_ENUM, default=MOVE_SUBSTATES_ENUM_DEF)
-    MOVE_substate_end: bpy.props.EnumProperty(name='End', items=MOVE_SUBSTATES_ENUM, default=MOVE_SUBSTATES_ENUM_DEF)
+    substate: bpy.props.EnumProperty(name='Substate', items=_get_substate_enum, default=0)
 
-    ACTV_substate_start: bpy.props.EnumProperty(name='Substate', items=ACTV_SUBSTATES_ENUM, default=ACTV_SUBSTATES_ENUM_DEF)
-    ACTV_substate_end: bpy.props.EnumProperty(name='End', items=ACTV_SUBSTATES_ENUM, default=ACTV_SUBSTATES_ENUM_DEF)
-
-    CMBT_substate_start: bpy.props.EnumProperty(name='Substate', items=CMBT_SUBSTATES_ENUM, default=CMBT_SUBSTATES_ENUM_DEF)
-    CMBT_substate_end: bpy.props.EnumProperty(name='End', items=CMBT_SUBSTATES_ENUM, default=CMBT_SUBSTATES_ENUM_DEF)
-
-    ATCK_substate_start: bpy.props.EnumProperty(name='Substate', items=ATCK_SUBSTATES_ENUM, default=ATCK_SUBSTATES_ENUM_DEF)
-    ATCK_substate_end: bpy.props.EnumProperty(name='End', items=ATCK_SUBSTATES_ENUM, default=ATCK_SUBSTATES_ENUM_DEF)
-
-    VOCL_substate_start: bpy.props.EnumProperty(name='Substate', items=VOCL_SUBSTATES_ENUM, default=VOCL_SUBSTATES_ENUM_DEF)
-    VOCL_substate_end: bpy.props.EnumProperty(name='End', items=VOCL_SUBSTATES_ENUM, default=VOCL_SUBSTATES_ENUM_DEF)
-
-    SENS_substate_start: bpy.props.EnumProperty(name='Substate', items=SENS_SUBSTATES_ENUM, default=SENS_SUBSTATES_ENUM_DEF)
-    SENS_substate_end: bpy.props.EnumProperty(name='End', items=SENS_SUBSTATES_ENUM, default=SENS_SUBSTATES_ENUM_DEF)
-
-    EMOT_substate_start: bpy.props.EnumProperty(name='Substate', items=EMOT_SUBSTATES_ENUM, default=EMOT_SUBSTATES_ENUM_DEF)
-    EMOT_substate_end: bpy.props.EnumProperty(name='End', items=EMOT_SUBSTATES_ENUM, default=EMOT_SUBSTATES_ENUM_DEF)
-
-    stage: bpy.props.EnumProperty(name='Stage', items=STAGES_ENUM, default=STAGES_ENUM_DEF)
-
-    oriented: bpy.props.BoolProperty(name='Is Oriented?', default=False)
     orientation_end: bpy.props.FloatProperty(name='Orientation', default=0.0, min=-math.pi*2,max=math.pi*2, subtype=subtypes.FloatProperty.Subtypes.ANGLE, unit=subtypes.FloatProperty.Units.ROTATION)
 
-    masked: bpy.props.BoolProperty(name='Is Masked?', default=False)
-    mask: bpy.props.EnumProperty(name='Mask', items=MASKS_ENUM, default=MASKS_ENUM_DEF)
+    direction: bpy.props.EnumProperty(name='Direction', items=_get_direction_enum, default=0)
 
-    directional: bpy.props.BoolProperty(name='Is Directional?', default=False)
-    direction: bpy.props.EnumProperty(name='Direction', items=DIRECTIONS_ENUM, default=DIRECTIONS_ENUM_DEF)
-    
     variation: bpy.props.IntProperty(name='Variation', default=1)
 
     motion: bpy.props.BoolProperty(name='Root Motion', default=False)
     mirrored: bpy.props.BoolProperty(name='Mirrored', default=False)
 
-    def _get_substate_key(self, val):
-        return '{0}_'.format(val)
-
-    def _get_substate_keys(self):
-        start = self._get_substate_key(self.state_start)
-        end = self._get_substate_key(self.state_end if self.changes_state else self.state_start)
-
-        sk = '{0}substate_start'.format(start)
-        ek = '{0}substate_end'.format(end)
-
-        return sk, ek
-
     def _get_environment(self):
         return self.environment_start, self.environment_end if self.changes_environment else ''
 
-    def _get_state(self):
-        return self.state_start, self.state_end if self.changes_state else ''
+    def _get_pose(self):
+        return self.pose_start, self.pose_end if self.changes_pose else ''
+
+    def _get_category(self):
+        return self.category_start, self.category_end if self.changes_category else ''
 
     def _get_substate(self):
-        sk, ek = self._get_substate_keys()
-
-        s = getattr(self, sk)
-        e = getattr(self, ek)
-
-        return s, e if self.changes_substate else ''
+        return self.substate
 
     def get_action_name(self):
         action_name = NameTemplate.TEMPLATE
@@ -137,24 +171,29 @@ class AnimationMetadataBase():
         length = action.frame_range[1] - action.frame_range[0]
 
         env_start, env_end = self._get_environment()
-        state_start, state_end = self._get_state()
-        substate_start, substate_end = self._get_substate()
+        cat_start, cat_end = self._get_category()
+        pose_start, pose_end = self._get_pose()
+        substate = self._get_substate()
 
-        action_name = action_name.replace(NameTemplate.TK_MASK   , self.mask if self.masked else 'FULL')        
+        action_name = action_name.replace(NameTemplate.TK_ACTOR  , self.actor)
+
+        action_name = action_name.replace(NameTemplate.TK_CAT_S    , cat_start)
+        action_name = action_name.replace(NameTemplate.TK_CAT_E    , cat_end)
+
+        action_name = action_name.replace(NameTemplate.TK_MASK   , self.mask)
 
         action_name = action_name.replace(NameTemplate.TK_ENV_S  , env_start)
         action_name = action_name.replace(NameTemplate.TK_ENV_E  , env_end)
 
-        action_name = action_name.replace(NameTemplate.TK_STATE_S  , state_start)
-        action_name = action_name.replace(NameTemplate.TK_STATE_E  , state_end)
+        action_name = action_name.replace(NameTemplate.TK_POSE_S  , pose_start)
+        action_name = action_name.replace(NameTemplate.TK_POSE_E  , pose_end)
 
-        action_name = action_name.replace(NameTemplate.TK_SUBS_S , substate_start)
-        action_name = action_name.replace(NameTemplate.TK_SUBS_E , substate_end)
-        
-        action_name = action_name.replace(NameTemplate.TK_DIR    , self.direction if self.directional else '')
-        
+        action_name = action_name.replace(NameTemplate.TK_SUBS    , substate)
+
+        action_name = action_name.replace(NameTemplate.TK_DIR    , self.direction)
+
         o = str(int(math.degrees(self.orientation_end)))
-        action_name = action_name.replace(NameTemplate.TK_ORI_E  , o if self.oriented else '')
+        action_name = action_name.replace(NameTemplate.TK_ORI_E  , o)
 
         action_name = action_name.replace(NameTemplate.TK_RMIP   , 'RM' if self.motion else 'IP')
         action_name = action_name.replace(NameTemplate.TK_VARI   , str(self.variation))
@@ -169,6 +208,14 @@ class AnimationMetadataBase():
         row = col.row(align=True)
         return row
 
+    def draw_basic(self, context, col, prop, icon=cspy.icons.CANCEL):
+        row1 = col.row(align=True)
+        row1.prop(self, prop, icon=icon)
+
+    def draw_toggle(self, context, col, prop, icon=cspy.icons.CANCEL):
+        row1 = col.row(align=True)
+        row1.prop(self, prop, icon=icon,toggle=True)
+
     def draw_start_change_end(self, context, col, key_start, key_change='', key_end='', icon=cspy.icons.CANCEL):
         key_change = key_start if key_change == '' else key_change
         key_end = key_start if key_end == '' else key_end
@@ -179,13 +226,13 @@ class AnimationMetadataBase():
         changes = getattr(self, changes_prop_name)
 
         row1 = col.row(align=True)
-        row1.prop(self, start_prop_name)        
+        row1.prop(self, start_prop_name, icon=icon)
 
         row1b = row1.split()
-        row1b.prop(self, changes_prop_name, toggle=True, text='', icon=icon)      
-        row1c = row1.split()   
-        row1c.enabled = changes      
-        row1c.prop(self, end_prop_name, text='') 
+        row1b.prop(self, changes_prop_name, toggle=True, text='', icon=cspy.icons.CHECKBOX_HLT if changes else cspy.icons.CHECKBOX_DEHLT)
+        row1c = row1.split()
+        row1c.enabled = changes
+        row1c.prop(self, end_prop_name, text='')
 
     def draw_enabled(self, context, layout, value_key, change_key, icon):
         row = self.get_row(layout)
@@ -193,11 +240,11 @@ class AnimationMetadataBase():
         rowb = row.split()
         rowb.enabled = getattr(self, change_key)
         rowb.prop(self, value_key)
-    
-    def draw(self, context, layout):
+
+    def draw(self, context, layout, check_op):
         action = self.id_data
         new_name = self.get_action_name()
-        substate_start_key, substate_end_key = self._get_substate_keys()
+        substate = self._get_substate()
 
         box = layout.box()
 
@@ -205,33 +252,40 @@ class AnimationMetadataBase():
         col.label(text=action.name)
         col.label(text=new_name)
 
-        box = layout.box()        
+        box = layout.box()
         col = box.column(align=True)
 
-        self.draw_enabled(context, col, 'mask', 'masked', cspy.icons.MOD_MASK)
+        row = col.row(align=True)
+        self.draw_basic(context, row, 'actor', cspy.icons.MONKEY)
+        self.draw_basic(context, row, 'mask', cspy.icons.MOD_MASK)
 
         self.draw_start_change_end(context, col, 'environment', icon=cspy.icons.WORLD_DATA)
-        self.draw_start_change_end(context, col, 'state', icon=cspy.icons.OUTLINER_OB_ARMATURE)
-        self.draw_start_change_end(context, col, substate_start_key, 'substate', substate_end_key, icon=cspy.icons.MOD_ARMATURE)
-        
-        self.draw_enabled(context, col, 'direction', 'directional', cspy.icons.ORIENTATION_CURSOR)
-        self.draw_enabled(context, col, 'orientation_end', 'oriented', cspy.icons.ORIENTATION_GIMBAL)
+        self.draw_start_change_end(context, col, 'category', icon=cspy.icons.OUTLINER_OB_GROUP_INSTANCE)
+        self.draw_start_change_end(context, col, 'pose', icon=cspy.icons.OUTLINER_OB_ARMATURE)
+        self.draw_basic(context, col, 'substate', icon=cspy.icons.MOD_ARMATURE)
 
-        row = self.get_row(col)        
-        row.prop(self, 'variation', icon=cspy.icons.SEQUENCE)
-        row.prop(self, 'stage')
+        row = col.row(align=True)
+        self.draw_basic(context, row, 'direction', cspy.icons.ORIENTATION_CURSOR)
+        self.draw_basic(context, row, 'orientation_end', cspy.icons.ORIENTATION_GIMBAL)
 
         row = self.get_row(col)
-        row.prop(self, 'motion', toggle=True, icon=cspy.icons.ORIENTATION_GLOBAL)
-        row.prop(self, 'mirrored', toggle=True, icon=cspy.icons.MOD_MIRROR)
-        
+        self.draw_basic(context, row, 'variation', icon=cspy.icons.SEQUENCE)
+        self.draw_basic(context, row, 'stage', cspy.icons.FILE_REFRESH)
+
+        row = self.get_row(col)
+        self.draw_toggle(context, row, 'motion', icon=cspy.icons.ORIENTATION_GLOBAL)
+        self.draw_toggle(context, row, 'mirrored', icon=cspy.icons.MOD_MIRROR)
+
+        col.separator()
+        col.operator(check_op, icon=cspy.icons.VIEWZOOM)
+
 
 class AnimationMetadata(AnimationMetadataBase, bpy.types.PropertyGroup):
     def print(self):
         print(self.get_action_name())
 
     def from_animation_clip_metadata(self, acm):
-        self.state = acm.state
+        self.pose = acm.state
         self.substate_start = acm.substate_start
         self.substate_end = acm.substate_end
         self.environment_start = acm.environment_start

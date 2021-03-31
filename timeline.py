@@ -46,7 +46,7 @@ def clamp_to_strip(context, play=False):
         if strip.select:
             start = min(start, strip.frame_start)
             end = max(end, strip.frame_end)
-            
+
     clamp_timeline_to_range(context, start, end, play)
 
 def clamp_to_strips(context, play=False):

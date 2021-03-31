@@ -133,6 +133,20 @@ def deselect_all_frames(action):
         for k in f.keyframe_points:
             k.select_control_point = False
 
+def get_rotation_at_key(action, bone_name, frame):
+    bone_path = get_bone_data_path(bone_name, 'rotation_quaternion')
+
+    bone_curves = [fc for fc in action.fcurves if fc.data_path.startswith(bone_path)]
+
+    quat = mathutils.Quaternion()
+
+    for index, curve in enumerate(bone_curves):
+        v = curve.evaluate(frame)
+        quat[index] = v
+
+    return quat
+
+
 def sample_fcurve(action):
     start = action.frame_range[0]
     stop = action.frame_range[1]
@@ -285,18 +299,18 @@ def group_actions_by_bone():
     for armature in bpy.data.armatures:
         for bone in armature.bones:
             bone_names.add(bone.name)
-    
+
     bone_paths = []
     for bone_name in bone_names:
         bone_paths.append((bone_name, get_bone_data_path(bone_name, '')))
 
     for action in bpy.data.actions:
         for fcurve in action.fcurves:
-            for bone_name, bone_path in bone_paths:                    
+            for bone_name, bone_path in bone_paths:
                 if fcurve.group and fcurve.group.name in bone_names:
                     continue
                 if not fcurve.data_path.startswith(bone_path):
-                    continue          
+                    continue
 
                 if bone_name in action.groups:
                     group = action.groups[bone_name]
@@ -306,10 +320,10 @@ def group_actions_by_bone():
 
 def split_action(master_action, new_action_name, old_clip_name, new_clip_name, start, end):
 
-    new_action = bpy.data.actions.new(new_action_name)    
+    new_action = bpy.data.actions.new(new_action_name)
     master_action.use_fake_user = True
     new_action.use_fake_user = True
-    
+
     frame_shift = start - 1
 
     new_clip = UnityClipMetadata.handle_split(master_action, new_action, old_clip_name, new_clip_name, frame_shift)
@@ -322,11 +336,11 @@ def split_action(master_action, new_action_name, old_clip_name, new_clip_name, s
     ))
 
     new_action = copy_from_action_range(master_action, new_action, start, end, frame_shift)
-    
+
     new_clip.full_frame_range()
 
 def copy_from_action_range(master_action, new_action, start, end, frame_shift):
-    
+
     for index in cspy.iters.reverse_index(new_action.fcurves):
         fcurve = new_action.fcurves[index]
         new_action.fcurves.remove(fcurve)
@@ -346,20 +360,20 @@ def copy_from_action_range(master_action, new_action, start, end, frame_shift):
         new_end = end - frame_shift
 
         new_curve.keyframe_points.insert(new_start, value_start, options={'FAST'})
-        new_curve.keyframe_points.insert(new_end, value_end, options={'FAST'})    
-   
+        new_curve.keyframe_points.insert(new_end, value_end, options={'FAST'})
+
         for key in curve.keyframe_points:
             f = key.co[0]
             v = key.co[1]
 
             if f < start or f > end:
                 continue
-            
+
             nf = f - frame_shift
 
             new_curve.keyframe_points.insert(nf, v, options={'FAST'})
 
-    for new_curve in new_action.fcurves:        
+    for new_curve in new_action.fcurves:
         new_curve.update()
 
     return new_action

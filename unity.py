@@ -9,7 +9,7 @@ def get_active_unity_object(context):
         return context.scene.unity_settings.target_armature
     if context.scene.unity_settings.mode == 'TARGET':
         return context.scene.unity_settings.target_armature
-    
+
     return context.active_object
 
 def update_clip_index_scene(self, context):
@@ -24,21 +24,19 @@ def update_clip_index_scene(self, context):
     context.scene.frame_end = clip.frame_end
 
     context.scene.frame_set(clip.frame_start)
-    
+
     bpy.ops.timeline.view_clip()
-
-
 
 _MODES = {
     'Active Mode':'ACTIVE',
     'Target Mode':'TARGET',
     'Scene Mode':'SCENE',
 }
-_MODES_ENUM =             cspy.utils.create_enum_dict(_MODES)
-_MODES_ENUM_DEF           = 'ACTIVE'
+_MODE_ENUM =             cspy.utils.create_enum_dict(_MODES)
+_MODE_ENUM_DEF           = 'ACTIVE'
 
 class UnitySettings(bpy.types.PropertyGroup):
-    mode: bpy.props.EnumProperty(name='Mode', items=_MODES_ENUM, default=_MODES_ENUM_DEF)
+    mode: bpy.props.EnumProperty(name='Mode', items=_MODE_ENUM, default=_MODE_ENUM_DEF)
 
     sheet_dir_path: bpy.props.StringProperty(name="Sheet Dir Path", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
     key_dir_path: bpy.props.StringProperty(name="Key Dir Path", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
@@ -53,8 +51,8 @@ class UnitySettings(bpy.types.PropertyGroup):
     draw_root_motion: bpy.props.BoolProperty(name='Draw Root Motion')
     draw_frames: bpy.props.BoolProperty(name='Draw Frames')
     draw_pose: bpy.props.BoolProperty(name='Draw Pose')
-    draw_operations: bpy.props.BoolProperty(name='Draw Delete')    
-    
+    draw_operations: bpy.props.BoolProperty(name='Draw Delete')
+
     icon_unity = cspy.icons.FILE_3D
     icon_sheets = cspy.icons.FILE
     icon_keys = cspy.icons.DECORATE_KEYFRAME
@@ -107,7 +105,7 @@ def get_all_clips(context):
         action = obj.animation_data.action
         return action.unity_clips
 
-def get_unity_clip(context):
+def get_unity_action_and_clip(context):
     try:
         scene = context.scene
         obj = get_active_unity_object(context)
@@ -115,14 +113,24 @@ def get_unity_clip(context):
         action = None
         unity_clip = None
         if scene.unity_settings.mode == 'SCENE' and scene.all_unity_clips and len(scene.all_unity_clips) > 0:
-            unity_clip = scene.all_unity_clips[scene.unity_settings.clip_index]     
-            action = unity_clip.id_data
+            unity_clip = scene.all_unity_clips[scene.unity_settings.clip_index]
+            action = unity_clip.action
         else:
             action = obj.animation_data.action
             if action is not None and action.unity_clips and len(action.unity_clips) > 0:
-                unity_clip = action.unity_clips[action.unity_metadata.clip_index]    
+                unity_clip = action.unity_clips[action.unity_metadata.clip_index]
 
         return action, unity_clip
     except Exception as inst:
-        print('get_unity_clip: {0}'.format(inst))
+        print('get_unity_action_and_clip: {0}'.format(inst))
         raise
+
+def get_filtered_clips(context):
+    scene = context.scene
+    scene_mode = scene.unity_settings.mode == 'SCENE'
+    filters = scene.unity_clip_filters
+
+    all_clips = get_all_clips(context)
+    filtered_clips = [clip for clip in all_clips if not filters.should_filter(context, clip)]
+
+    return filtered_clips

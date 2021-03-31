@@ -27,7 +27,7 @@ class PC_OT_insert_anchor_keyframe(PC_OP, OPS_, Operator):
     def bone_execute(self, context, bone, pose_correction):
         arm = context.active_object
         frame = context.scene.frame_current
-        
+
         if pose_correction.location_correction_type == 'NEGATE':
             action = arm.animation_data.action
 
@@ -101,7 +101,7 @@ class PC_OT_correct_pose_location(OPS_, Operator):
 
         if not first:
             return False
-            
+
         pc = context.active_pose_bone.pose_correction
         return pc.get_poll_valid(context)
 
@@ -123,21 +123,21 @@ class PC_OT_correct_pose_location(OPS_, Operator):
         pose_correction.bone_name = bone.name
         scene = context.scene
 
-        if self.loop:                
-            while self.do_poll(context):            
+        if self.loop:
+            while self.do_poll(context):
                 self.do_apply(context, arm, bone, pose_correction)
 
                 if self.forward:
                     scene.frame_set(scene.frame_current + 1)
-                else:   
+                else:
                     scene.frame_set(scene.frame_current - 1)
         else:
             self.do_apply(context, arm, bone, pose_correction)
-            
+
             if self.advance:
                 if self.forward:
                     scene.frame_set(scene.frame_current + 1)
-                else:   
+                else:
                     scene.frame_set(scene.frame_current - 1)
 
         return {'FINISHED'}

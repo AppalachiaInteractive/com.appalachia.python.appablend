@@ -51,8 +51,6 @@ def set_bone_layer(obj, bone_name, index, value):
 
 
 def remove_bones_startwith(obj, prefix):
-    if not bone_name in obj.data.bones:
-        return
 
     entered = False
     if enter_edit_mode():
@@ -75,8 +73,6 @@ def remove_bones_startwith(obj, prefix):
 
 
 def remove_bones(obj, bone_names):
-    if not bone_name in obj.data.bones:
-        return
 
     entered = False
     if enter_edit_mode():
@@ -86,6 +82,8 @@ def remove_bones(obj, bone_names):
     edit_bones = obj.data.edit_bones
 
     for bone_name in bone_names:
+        if not bone_name in edit_bones:
+            continue
         bone = edit_bones[bone_name]
         edit_bones.remove(bone)
 
@@ -376,7 +374,7 @@ def align_bone_x_axis(edit_bone, new_x_axis):
     if dot1 > dot2:
         edit_bone.roll += angle * 2.0
 
-def get_disconnected_bone_names(armature):    
+def get_disconnected_bone_names(armature):
     disconnected_bone_names = set()
     for b in armature.data.bones:
         if not b.use_connect:
@@ -384,13 +382,13 @@ def get_disconnected_bone_names(armature):
 
     return disconnected_bone_names
 
-def get_parent_bone_names(bone):    
+def get_parent_bone_names(bone):
     parent_bone_names = set()
     parent_bone = bone
     while parent_bone is not None:
         parent_bone_names.add(parent_bone.name)
         parent_bone = parent_bone.parent
-        
+
     return parent_bone_names
 
 def get_child_bone_names_recursive(bone):
@@ -401,6 +399,6 @@ def get_child_bone_names_recursive(bone):
 
         cr = get_child_bone_names_recursive(child)
         bone_names.union(cr)
-    
+
     return bone_names
 

@@ -223,7 +223,7 @@ class TIMELINE_OT_view:
     @classmethod
     def do_poll(cls, context):
         return True
-    
+
     def do_execute(self, context):
         for window in context.window_manager.windows:
             screen = window.screen
@@ -234,16 +234,16 @@ class TIMELINE_OT_view:
                     self.do_apply(context, override)
 
         return {'FINISHED'}
-    
+
 class TIMELINE_OT_view_frame(OPS_, TIMELINE_OT_view, Operator):
     """Clamp all areas to the current frame."""
     bl_idname = "timeline.view_frame"
     bl_label = "View Frame"
 
     def do_apply(self, context, override):
-        if override['area'].type == 'DOPESHEET_EDITOR':     
+        if override['area'].type == 'DOPESHEET_EDITOR':
             bpy.ops.action.view_frame(override)
-        elif override['area'].type == 'NLA_EDITOR':            
+        elif override['area'].type == 'NLA_EDITOR':
             bpy.ops.nla.view_frame(override)
 
 class TIMELINE_OT_view_clip(OPS_, TIMELINE_OT_view, Operator):
@@ -255,14 +255,14 @@ class TIMELINE_OT_view_clip(OPS_, TIMELINE_OT_view, Operator):
         f = context.scene.frame_current
         s = context.scene.frame_start
         e = context.scene.frame_end
-    
+
         context.scene.frame_current = (s + e) / 2
 
-        if override['area'].type == 'DOPESHEET_EDITOR':     
+        if override['area'].type == 'DOPESHEET_EDITOR':
             bpy.ops.action.view_frame(override)
-        elif override['area'].type == 'NLA_EDITOR':            
+        elif override['area'].type == 'NLA_EDITOR':
             bpy.ops.nla.view_frame(override)
-        
+
         context.scene.frame_current = f
 
 class TIMELINE_OT_view_selected(OPS_, TIMELINE_OT_view, Operator):
@@ -271,9 +271,9 @@ class TIMELINE_OT_view_selected(OPS_, TIMELINE_OT_view, Operator):
     bl_label = "View Selected"
 
     def do_apply(self, context, override):
-        if override['area'].type == 'DOPESHEET_EDITOR':     
+        if override['area'].type == 'DOPESHEET_EDITOR':
             bpy.ops.action.view_selected(override)
-        elif override['area'].type == 'NLA_EDITOR':            
+        elif override['area'].type == 'NLA_EDITOR':
             bpy.ops.nla.view_selected(override)
 
 class TIMELINE_OT_view_all(OPS_, TIMELINE_OT_view, Operator):
@@ -282,11 +282,11 @@ class TIMELINE_OT_view_all(OPS_, TIMELINE_OT_view, Operator):
     bl_label = "View All"
 
     def do_apply(self, context, override):
-        if override['area'].type == 'DOPESHEET_EDITOR':     
+        if override['area'].type == 'DOPESHEET_EDITOR':
             bpy.ops.action.view_all(override)
-        elif override['area'].type == 'NLA_EDITOR':            
+        elif override['area'].type == 'NLA_EDITOR':
             bpy.ops.nla.view_all(override)
-    
+
 class TIMELINE_OT_select_keys(OPS_, Operator):
     """Select keys in current range."""
     bl_idname = "timeline.select_keys"
@@ -323,8 +323,107 @@ class TIMELINE_OT_select_keys(OPS_, Operator):
             for key in fcurve.keyframe_points:
                 f = key.co[0]
                 key.select_control_point = f >= s and f <= e
-                
-            
 
-        
-    
+
+class TIMELINE_OT_clear():
+    @classmethod
+    def do_poll(cls, context):        
+        s = context.scene
+        return POLL.active_object_action(context) and s.frame_current >= s.frame_start and s.frame_current <= s.frame_end
+
+    def next(self, context):
+        context.scene.frame_set(context.scene.frame_current+1)
+
+    def prev(self, context):
+        context.scene.frame_set(context.scene.frame_current-1)
+
+
+class TIMELINE_OT_clear_all_prev(TIMELINE_OT_clear, OPS_, Operator):
+    """Clears all components of the selected bones, and moves to the previous frame."""
+    bl_idname = "timeline.clear_all_prev"
+    bl_label = "Clear All Prev"
+
+    def do_execute(self, context):
+        bpy.ops.pose.transforms_clear()
+        self.prev(context)
+
+class TIMELINE_OT_clear_all_next(TIMELINE_OT_clear, OPS_, Operator):
+    """Clears all components of the selected bones, and moves to the next frame."""
+    bl_idname = "timeline.clear_all_next"
+    bl_label = "Clear All Next"
+
+    def do_execute(self, context):
+        bpy.ops.pose.transforms_clear()
+        self.next(context)
+
+class TIMELINE_OT_clear_loc_prev(TIMELINE_OT_clear, OPS_, Operator):
+    """Clears location of the selected bones, and moves to the previous frame."""
+    bl_idname = "timeline.clear_loc_prev"
+    bl_label = "Clear Loc Prev"
+
+    def do_execute(self, context):
+        bpy.ops.pose.loc_clear()
+        self.prev(context)
+
+class TIMELINE_OT_clear_loc_next(TIMELINE_OT_clear, OPS_, Operator):
+    """Clears loc components of the selected bones, and moves to the next frame."""
+    bl_idname = "timeline.clear_loc_next"
+    bl_label = "Clear Loc Next"
+
+    def do_execute(self, context):
+        bpy.ops.pose.loc_clear()
+        self.next(context)
+
+class TIMELINE_OT_clear_rot_prev(TIMELINE_OT_clear, OPS_, Operator):
+    """Clears rot components of the selected bones, and moves to the previous frame."""
+    bl_idname = "timeline.clear_rot_prev"
+    bl_label = "Clear Rot Prev"
+
+    def do_execute(self, context):
+        bpy.ops.pose.rot_clear()
+        self.prev(context)
+
+class TIMELINE_OT_clear_rot_next(TIMELINE_OT_clear, OPS_, Operator):
+    """Clears rot components of the selected bones, and moves to the next frame."""
+    bl_idname = "timeline.clear_rot_next"
+    bl_label = "Clear Rot Next"
+
+    def do_execute(self, context):
+        bpy.ops.pose.rot_clear()
+        self.next(context)
+
+class TIMELINE_OT_clear_sca_prev(TIMELINE_OT_clear, OPS_, Operator):
+    """Clears sca components of the selected bones, and moves to the previous frame."""
+    bl_idname = "timeline.clear_sca_prev"
+    bl_label = "Clear Sca Prev"
+
+    def do_execute(self, context):
+        bpy.ops.pose.scale_clear()
+        self.prev(context)
+
+class TIMELINE_OT_clear_sca_next(TIMELINE_OT_clear, OPS_, Operator):
+    """Clears sca components of the selected bones, and moves to the next frame."""
+    bl_idname = "timeline.clear_sca_next"
+    bl_label = "Clear Sca Next"
+
+    def do_execute(self, context):
+        bpy.ops.pose.scale_clear()
+        self.next(context)
+
+class TIMELINE_OT_clear_user_prev(TIMELINE_OT_clear, OPS_, Operator):
+    """Clears user components of the selected bones, and moves to the previous frame."""
+    bl_idname = "timeline.clear_user_prev"
+    bl_label = "Clear User Prev"
+
+    def do_execute(self, context):
+        bpy.ops.pose.user_transforms_clear()
+        self.prev(context)
+
+class TIMELINE_OT_clear_user_next(TIMELINE_OT_clear, OPS_, Operator):
+    """Clears user components of the selected bones, and moves to the next frame."""
+    bl_idname = "timeline.clear_user_next"
+    bl_label = "Clear User Next"
+
+    def do_execute(self, context):
+        bpy.ops.pose.user_transforms_clear()
+        self.next(context)

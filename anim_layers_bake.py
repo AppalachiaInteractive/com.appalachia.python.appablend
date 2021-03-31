@@ -22,7 +22,7 @@ def frame_start_end(scene):
     #    frame_end = scene.frame_preview_end
     #else:
     #    frame_start = scene.frame_start
-    #    frame_end = scene.frame_end     
+    #    frame_end = scene.frame_end
     return frame_start, frame_end
 
 def smart_start_end(keyframes, frame_start, frame_end):
@@ -53,8 +53,8 @@ def smart_cycle(keyframes, fcu, frame_start, frame_end):
             cycle_end_dup = mod.cycles_after
             if mod.use_restricted_range and mod.frame_end < (fcu.range()[1] + fcu_range * cycle_end_dup):
                 cycle_end_dup = int((mod.frame_end - fcu.range()[1])/fcu_range)+1
-        
-        #duplicate the keys on the cycle before      
+
+        #duplicate the keys on the cycle before
         keyframes_dup = []
         for key in keyframes[1:]:
             key = list(key)
@@ -65,8 +65,8 @@ def smart_cycle(keyframes, fcu, frame_start, frame_end):
                 key[5] = tuple((list(key[5])[0] + fcu_range, key[5][1]))
                 if frame_end > key[0] > frame_start:
                     keyframes_dup.append(tuple(key))
-                
-        #if it's an iternal cycle then duplicate the keyframes before the cycle keyframes 
+
+        #if it's an iternal cycle then duplicate the keyframes before the cycle keyframes
         if not mod.cycles_before and mod.mode_before != 'None':
             cycle_start_dup = int((fcu.range()[0] - frame_start) /fcu_range)
             if mod.use_restricted_range and mod.frame_start > frame_start:
@@ -75,7 +75,7 @@ def smart_cycle(keyframes, fcu, frame_start, frame_end):
             cycle_start_dup = mod.cycles_before
             if mod.use_restricted_range and mod.frame_start > (fcu.range()[0] + fcu_range * cycle_start_dup):
                 cycle_start_dup = int((fcu.range()[0]-mod.frame_start)/fcu_range)+1
-        #duplicate the keys on the cycle before            
+        #duplicate the keys on the cycle before
         for key in keyframes[:-1]:
             key = list(key)
             for i in range(cycle_start_dup):
@@ -85,16 +85,16 @@ def smart_cycle(keyframes, fcu, frame_start, frame_end):
                 key[5] = tuple((list(key[5])[0] - fcu_range, key[5][1]))
                 if frame_end > key[0] > frame_start:
                     keyframes_dup.append(tuple(key))
-                 
+
         #merge the keyframes from the cycle with the original keyframes
         keyframes.extend(keyframes_dup)
-        
+
         if mod.use_restricted_range:
             keyframes = smart_start_end(keyframes, mod.frame_start, mod.frame_end)
             keyframes = smart_start_end(keyframes, mod.frame_start+1, mod.frame_end-1)
-            
+
     return keyframes
-                    
+
 def smart_bake(self, context):
     obj = bpy.context.object
     frame_start, frame_end = frame_start_end(context.scene)
@@ -114,7 +114,7 @@ def smart_bake(self, context):
                     keyframes.append((key.co[0], key.interpolation, key.handle_left_type, key.handle_right_type, tuple(key.handle_left), tuple(key.handle_right)))
             if len(fcu.modifiers) and obj.als.mergefcurves:
                 keyframes = smart_cycle(keyframes, fcu, frame_start, frame_end)
-            
+
             #if the list of keyframes exists in a different track list then MERGE them
             if (fcu.data_path, fcu.array_index) in fcu_keys:
                 keyframes = list(set(fcu_keys[(fcu.data_path, fcu.array_index)]+keyframes))
@@ -126,7 +126,7 @@ def smart_bake(self, context):
 def mute_unbaked_layers(layer_index, nla_tracks, additive):
     obj = bpy.context.object
     #a list to record which layers that are not merged were muted
-    mute_rec = [] 
+    mute_rec = []
     #mute the layers that are not going to be baked
     if obj.als.direction == 'ALL':
         return mute_rec
@@ -144,7 +144,7 @@ def mute_unbaked_layers(layer_index, nla_tracks, additive):
         if obj.als.direction == 'UP' and index < layer_index:
             track.mute = True
             track.select = False
-      
+
     return mute_rec
 
 def mute_modifiers(context, obj, nla_tracks, frame_start):
@@ -167,7 +167,7 @@ def mute_modifiers(context, obj, nla_tracks, frame_start):
                     for mod in fcu.modifiers:
                         if mod.mute == False:
                             modifier_rec.append(mod)
-                            mod.mute = True                          
+                            mod.mute = True
 
     return modifier_rec
 
@@ -205,7 +205,7 @@ def select_keyframed_bones(self, context, obj):
 
 def mute_constraints(obj):
     #Mute constraints if are not cleared during bake
-    constraint_rec = [] 
+    constraint_rec = []
     if obj.als.clearconstraints:
         return constraint_rec
     for bone in bpy.context.selected_pose_bones:
@@ -222,16 +222,16 @@ def smartbake_apply(obj, nla_tracks, fcu_keys):
     for fcu in strip.action.fcurves:
         if not fcu.is_valid:
             continue
-        
+
         fcu_key = (fcu.data_path, fcu.array_index)
         if fcu_key in fcu_keys.keys():
-            
+
             #add keyframes that are missing from the bake but included in the smart bake
             for smart_key in fcu_keys[fcu_key]:
                 key_exists = False
                 for key in fcu.keyframe_points:
                     if key.co[0] == smart_key[0]:
-                        
+
                         key_exists = True
                         break
                 if not key_exists:
@@ -239,9 +239,9 @@ def smartbake_apply(obj, nla_tracks, fcu_keys):
                     fcu.keyframe_points.add(1)
                     fcu.keyframe_points[-1].co = (smart_key[0], value)
                     fcu.update()
-                    
-                        
-            #remove unnecessery keyframes        
+
+
+            #remove unnecessery keyframes
             for i in range(int(strip.action.frame_range[0]),int(strip.action.frame_range[1]+1)):
                 key_exists = False
                 for smart_key in fcu_keys[fcu_key]:
@@ -272,14 +272,16 @@ def armature_restore(obj, b_layers, layers_rec, constraint_rec):
     #Turn off previous invisible bone layers
     for i in range(len(b_layers)):
         if i in layers_rec:
-            b_layers[i] = False   
-                    
+            b_layers[i] = False
+
     #Turn on constraints
     if not obj.als.clearconstraints:
         for constraint in constraint_rec:
             constraint.mute = False
 
 def AL_bake(frame_start, frame_end, nla_tracks, fcu_keys):
+    frame_start = int(frame_start)
+    frame_end = int(frame_end)
     #iterate through all the frames
     obj = bpy.context.object
     if obj is None:
@@ -334,15 +336,15 @@ def AL_bake(frame_start, frame_end, nla_tracks, fcu_keys):
                             #evaluate = evaluate * (1 - influence) + obj.pose.bones[bone].scale[fcu_key[1]] * influence
                             evaluate =  evaluate * (1 - influence) + influence
                             continue
-                
+
                 if fcu is None or fcu.mute:
                     continue
-                
+
                 if hasattr(fcu, 'group'):
-                    group = fcu.group.name if fcu.group is not None else None    
+                    group = fcu.group.name if fcu.group is not None else None
                 else:
                     group = None
-                
+
                 if blend_type =='REPLACE':
                     #if not evaluate and 'scale' in fcu_key[0]:
                     #    evaluate = 1
@@ -358,7 +360,7 @@ def AL_bake(frame_start, frame_end, nla_tracks, fcu_keys):
                 if len(fcu.modifiers) and not obj.als.mergefcurves and not mod_list:
                     for mod in fcu.modifiers:
                         mod_list = anim_layers.copy_modifiers(mod, mod_list)
-            
+
             #find or create the fcurve in the new action
             baked_fcu = baked_action.fcurves.find(fcu_key[0], index = fcu_key[1])
             if baked_fcu is None:
@@ -366,7 +368,7 @@ def AL_bake(frame_start, frame_end, nla_tracks, fcu_keys):
                     baked_fcu = baked_action.fcurves.new(fcu_key[0], index = fcu_key[1])
                 else:
                     baked_fcu = baked_action.fcurves.new(fcu_key[0], index = fcu_key[1], action_group = group)
-            
+
             #add the fcurve evaluation to the current action
             baked_fcu.keyframe_points.add(1)
             keyframe = baked_fcu.keyframe_points[-1]
@@ -390,12 +392,12 @@ def AL_bake(frame_start, frame_end, nla_tracks, fcu_keys):
                     keyframe.handle_left_type = 'AUTO_CLAMPED'
                     #keyframe.handle_right = (interpolation[5][0], interpolation[5][1] + (evaluate - interpolation[0][1]))
                 keyframe.handle_right = interpolation[5]
-                
+
                 if extrapolation:
                     baked_fcu.extrapolation = 'LINEAR'
 
             #add in-betweener
-            #frame_range / (frame_range * factor) 
+            #frame_range / (frame_range * factor)
 
         baked_fcu.update()
 
@@ -404,17 +406,17 @@ def AL_bake(frame_start, frame_end, nla_tracks, fcu_keys):
             anim_layers.paste_modifiers(baked_fcu, mod_list)
 
     return baked_action
-    
+
 
 class MergeAnimLayerDown(bpy.types.Operator):
     """Merge and bake the layers from the current selected layer down to the base"""
     bl_idname = "anim.layers_merge_down"
     bl_label = "Merge_Layers_Down"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     #limited property of diretion for blender's bake
     direction: bpy.props.EnumProperty(name = '', description="Select direction of merge", items = [('DOWN', 'Down', 'Merge downwards','TRIA_DOWN', 0), ('ALL', 'All', 'Merge all layers', 1)])
-    
+
     def invoke(self, context, event):
         wm = context.window_manager
         return wm.invoke_props_dialog(self, width = 200)
@@ -446,22 +448,22 @@ class MergeAnimLayerDown(bpy.types.Operator):
         if obj is None:
             return {'CANCELLED'}
         nla_tracks = obj.animation_data.nla_tracks
-        
+
         if obj.als.direction == 'DOWN' and not obj.track_list_index:
             return {'CANCELLED'}
         if obj.als.direction == 'UP' and obj.track_list_index == len(nla_tracks)-2:
             return {'CANCELLED'}
-        
+
         handler_key = "animlayers_checks"
         anim_layers.remove_handler(handler_key, bpy.app.handlers.depsgraph_update_pre)
 
-        #define the start and end frame of the bake, according to scene or preview length 
+        #define the start and end frame of the bake, according to scene or preview length
         frame_start, frame_end = frame_start_end(bpy.context.scene)
-        obj.als.view_all_keyframes = False                     
+        obj.als.view_all_keyframes = False
 
         layer_index = obj.track_list_index
         #append all the blend types
-        
+
         if obj.als.baketype =='BLENDER':
             obj.als.direction = self.direction
 
@@ -473,7 +475,7 @@ class MergeAnimLayerDown(bpy.types.Operator):
             blend = 'REPLACE'
 
         if obj.als.operator == 'MERGE':
-            if obj.als.direction == 'DOWN':     
+            if obj.als.direction == 'DOWN':
                 obj.track_list_index = 0
             action_name = obj.animation_data.action.name
 
@@ -490,22 +492,22 @@ class MergeAnimLayerDown(bpy.types.Operator):
 
         mute_rec = mute_unbaked_layers(layer_index, nla_tracks, additive)
         fcu_keys = smart_bake(obj, context)
-        
+
         #use internal bake
-        if obj.als.baketype =='BLENDER': 
-            modifier_rec = mute_modifiers(context, obj, nla_tracks, frame_start)              
+        if obj.als.baketype =='BLENDER':
+            modifier_rec = mute_modifiers(context, obj, nla_tracks, frame_start)
             if obj.type == 'ARMATURE':
                 b_layers = obj.data.layers
                 layers_rec = invisible_layers(obj, b_layers)
-                
+
                 select_keyframed_bones(self, context, obj)
-                        
+
                 constraint_rec = mute_constraints(obj)
 
             bpy.ops.nla.bake(frame_start = frame_start, frame_end = frame_end, only_selected = True, visual_keying=True, clear_constraints=obj.als.clearconstraints, use_current_action=True, bake_types={'OBJECT', 'POSE'})
             unmute_modifiers(obj, nla_tracks, modifier_rec)
             if obj.als.smartbake:
-                smartbake_apply(obj, nla_tracks, fcu_keys) 
+                smartbake_apply(obj, nla_tracks, fcu_keys)
                 armature_restore(obj, b_layers, layers_rec, constraint_rec)
 
         else: #use anim layers bake
@@ -528,14 +530,14 @@ class MergeAnimLayerDown(bpy.types.Operator):
                 while layer_index  > 0:
                     nla_tracks.remove(nla_tracks[layer_index])
                     layer_index -= 1
-                
+
             if obj.als.direction == 'UP':
                 layer_index += 1
                 while layer_index < len(nla_tracks)-1:
                     if additive and nla_tracks[layer_index].strips[0].blend_type == 'REPLACE':
                         break
                     nla_tracks.remove(nla_tracks[layer_index])
-            
+
             if obj.als.direction == 'ALL':
                 obj.track_list_index = 0
                 index = 0
@@ -551,7 +553,7 @@ class MergeAnimLayerDown(bpy.types.Operator):
             while len(strip.fcurves[0].keyframe_points):
                 strip.fcurves[0].keyframe_points.remove(strip.fcurves[0].keyframe_points[0])
             strip.influence = 1
-            
+
         #turn the tracks back on if necessery
         if obj.als.direction != 'ALL':
             for track in nla_tracks:
@@ -559,16 +561,16 @@ class MergeAnimLayerDown(bpy.types.Operator):
                     track.mute = True
                 else:
                     track.mute = False
-        
+
         if obj.als.baketype == 'BLENDER':
             unmute_modifiers(obj, nla_tracks, modifier_rec)
             if obj.als.smartbake:
-                smartbake_apply(obj, nla_tracks, fcu_keys) 
+                smartbake_apply(obj, nla_tracks, fcu_keys)
                 armature_restore(obj, b_layers, layers_rec, constraint_rec)
-                            
-        anim_layers.register_layers(nla_tracks)            
+
+        anim_layers.register_layers(nla_tracks)
         if handler_key not in driver_namespace:
             bpy.app.handlers.depsgraph_update_pre.append(anim_layers.check_handler)
             driver_namespace[handler_key] = anim_layers.check_handler
-                           
+
         return {'FINISHED'}

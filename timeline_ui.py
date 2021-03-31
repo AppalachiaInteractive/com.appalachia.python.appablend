@@ -62,11 +62,11 @@ class TIMELINE_PT_Timeline:
             row.operator(TIMELINE_OT_view_frame.bl_idname, text='Clip')
             row.operator(TIMELINE_OT_view_selected.bl_idname, text='Selected')
             row.operator(TIMELINE_OT_view_all.bl_idname, text='All')
-        
+
         row = box.row(align=True)
-        row.operator(TIMELINE_OT_select_keys.bl_idname, text='Select Keys (By Bone)').selected_bones = True        
+        row.operator(TIMELINE_OT_select_keys.bl_idname, text='Select Keys (By Bone)').selected_bones = True
         row.operator(TIMELINE_OT_select_keys.bl_idname)
-    
+
 
 class TIMELINE_VIEW_3D_PT_UI_Tool_Timeline(TIMELINE_PT_Timeline, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
     bl_idname = "TIMELINE_VIEW_3D_PT_UI_Tool_Timeline"
@@ -88,14 +88,26 @@ class TIMELINE_VIEW_3D_PT_UI_Tool_ClearTransforms(TIMELINE_PT_Timeline, UI.VIEW_
 
         row = box.row()
 
+        row.operator(TIMELINE_OT_clear_all_next.bl_idname, text='', icon=cspy.icons.REW)
         row.operator("pose.transforms_clear", text="All")
-
+        row.operator(TIMELINE_OT_clear_all_next.bl_idname, text='', icon=cspy.icons.FF)
+        
         row = box.row()
 
+        row.operator(TIMELINE_OT_clear_loc_next.bl_idname, text='', icon=cspy.icons.REW)
         row.operator("pose.loc_clear", text="Location")
+        row.operator(TIMELINE_OT_clear_loc_next.bl_idname, text='', icon=cspy.icons.FF)
+        row.separator()
+        row.operator(TIMELINE_OT_clear_rot_next.bl_idname, text='', icon=cspy.icons.REW)
         row.operator("pose.rot_clear", text="Rotation")
+        row.operator(TIMELINE_OT_clear_rot_next.bl_idname, text='', icon=cspy.icons.FF)
+        row.separator()
+        row.operator(TIMELINE_OT_clear_sca_next.bl_idname, text='', icon=cspy.icons.REW)
         row.operator("pose.scale_clear", text="Scale")
+        row.operator(TIMELINE_OT_clear_sca_next.bl_idname, text='', icon=cspy.icons.FF)
 
         row = box.row()
 
+        row.operator(TIMELINE_OT_clear_user_prev.bl_idname, text='', icon=cspy.icons.REW)
         row.operator("pose.user_transforms_clear", text="Reset Unkeyed")
+        row.operator(TIMELINE_OT_clear_user_next.bl_idname, text='', icon=cspy.icons.FF)

@@ -4,7 +4,13 @@ from mathutils import Vector, Euler, Matrix
 import cspy
 from cspy import utils
 
-def update_clip_index(self, context):    
+def sync_with_scene_mode(context):
+    for clip in context.scene.all_unity_clips:
+        real_clip = clip.action.unity_clips[clip.name]
+
+        real_clip.copy_from(clip)
+
+def update_clip_index(self, context):
     action = context.active_object.animation_data.action
     if self.id_data != action:
         return
@@ -12,41 +18,16 @@ def update_clip_index(self, context):
 
     context.scene.frame_start = clip.frame_start
     context.scene.frame_end = clip.frame_end
-    context.scene.frame_set(clip.frame_start)    
+    context.scene.frame_set(clip.frame_start)
     bpy.ops.timeline.view_clip()
 
-class UnityActionMetadata(bpy.types.PropertyGroup):  
+class UnityActionMetadata(bpy.types.PropertyGroup):
     clips_protected: bpy.props.BoolProperty(name='Clip Data Protected')
     clips_hidden: bpy.props.BoolProperty(name='Clips Hidden')
     master_action: bpy.props.BoolProperty(name='Master Action')
     unity_clip_template: bpy.props.PointerProperty(name="Unity Clip Template", type=bpy.types.Action)
     clip_index: bpy.props.IntProperty(name='Unity Index', default =-1, min=-1, update=update_clip_index)
     split_from: bpy.props.PointerProperty(name='Action', type=bpy.types.Action)
-
-class UnityRootMotionSettings(bpy.types.PropertyGroup):    
-    rot_bake_into: bpy.props.BoolProperty(name='Root Rotation - Bake Into Pose')
-    x_bake_into: bpy.props.BoolProperty(name='Root Position X - Bake Into Pose')
-    y_bake_into: bpy.props.BoolProperty(name='Root Position Y - Bake Into Pose')
-    z_bake_into: bpy.props.BoolProperty(name='Root Position Z - Bake Into Pose')
-
-    rot_offset: bpy.props.FloatProperty(name='Root Rotation -  Offset')
-    x_offset: bpy.props.FloatProperty(name='Root Position X -  Offset')
-    y_offset: bpy.props.FloatProperty(name='Root Position Y -  Offset')
-    z_offset: bpy.props.FloatProperty(name='Root Position Z -  Offset')
-
-    keys = [
-        'rot_bake_into',
-        'x_bake_into',
-        'y_bake_into',
-        'z_bake_into',
-        'rot_offset',
-        'x_offset',
-        'y_offset',
-        'z_offset'
-    ]
-
-    def copy_from(self, other):
-        cspy.utils.copy_from_to(other, self)
 
 class UnityClipMetadata(bpy.types.PropertyGroup):
     can_edit: bpy.props.BoolProperty(name='Can Edit')
@@ -64,8 +45,32 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
     pose_start_rooted: bpy.props.BoolProperty(name='Pose Start Rooted')
     pose_end_rooted: bpy.props.BoolProperty(name='Pose End Rooted')
     loop_time: bpy.props.BoolProperty(name='Loop Time')
-    root_motion: bpy.props.PointerProperty(name='Root Motion', type=UnityRootMotionSettings)
 
+    root_motion_rot_bake_into: bpy.props.BoolProperty(name='Root Rotation - Bake Into Pose')
+    root_motion_x_bake_into: bpy.props.BoolProperty(name='Root Position X - Bake Into Pose')
+    root_motion_y_bake_into: bpy.props.BoolProperty(name='Root Position Y - Bake Into Pose')
+    root_motion_z_bake_into: bpy.props.BoolProperty(name='Root Position Z - Bake Into Pose')
+    root_motion_rot_offset: bpy.props.FloatProperty(name='Root Rotation -  Offset')
+    root_motion_x_offset: bpy.props.FloatProperty(name='Hip Offset X')
+    root_motion_y_offset: bpy.props.FloatProperty(name='Hip Offset Y')
+    root_motion_z_offset: bpy.props.FloatProperty(name='Hip Offset Z')
+    root_offset_x: bpy.props.FloatProperty(name='Root Offset X')
+    root_offset_y: bpy.props.FloatProperty(name='Root Offset Y')
+    root_offset_z: bpy.props.FloatProperty(name='Root Offset Z')
+
+    root_motion_keys = [
+        'root_motion_rot_bake_into',
+        'root_motion_x_bake_into',
+        'root_motion_y_bake_into',
+        'root_motion_z_bake_into',
+        'root_motion_rot_offset',
+        'root_motion_x_offset',
+        'root_motion_y_offset',
+        'root_motion_z_offset',
+        'root_offset_x',
+        'root_offset_y',
+        'root_offset_z',
+    ]
     def copy_from(self, other):
         cspy.utils.copy_from_to(other, self)
 
@@ -76,7 +81,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
         clip_name = row['clip_name']
         frame_start = int(row['start_frame']) + key_offset
         frame_end = int(row['stop_frame']) + key_offset
-        loop_time = True if row['loop_time'] == 'True' else False        
+        loop_time = True if row['loop_time'] == 'True' else False
         rot_bake_into = True if row['rot_bake_into'] == 'True' else False
         rot_offset = float(row['rot_offset'])
         y_bake_into = True if row['y_bake_into'] == 'True' else False
@@ -88,7 +93,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
     @classmethod
     def process_clip_row(cls, row, key_offset, action):
         obj_name,clip_name,frame_start,frame_end,loop_time,rot_bake_into,rot_offset,y_bake_into ,y_offset,xz_bake_into = UnityClipMetadata.parse_clip_row(row, key_offset)
-            
+
         potential_action_names = [obj_name, clip_name, '{0}_{1}'.format(obj_name, clip_name)]
 
         matching_metadatas = []
@@ -98,7 +103,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
             for potential_name in potential_action_names:
                 if action.name == potential_name:
                     found = True
-            
+
             if not found:
                 return None
 
@@ -113,9 +118,9 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
             matching_metadatas.append(metadata)
         else:
             for potential_name in potential_action_names:
-                if not action.name in bpy.data.actions:
+                if not potential_name in bpy.data.actions:
                     continue
-                
+
                 action = bpy.data.actions[potential_name]
 
                 metadata = action.unity_clips.get(clip_name)
@@ -128,7 +133,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
 
                 matching_metadatas.append(metadata)
 
-        for metadata in matching_metadatas:                
+        for metadata in matching_metadatas:
             metadata.action = action
             metadata.fbx_name = obj_name
             metadata.name = clip_name
@@ -138,15 +143,14 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
             metadata.pose_end = 'Default'
             metadata.loop_time = loop_time
 
-            metadata.root_motion.rot_bake_into = rot_bake_into
-            metadata.root_motion.x_bake_into = xz_bake_into
-            metadata.root_motion.y_bake_into = y_bake_into
-            metadata.root_motion.z_bake_into = xz_bake_into
-
-            metadata.root_motion.rot_offset = rot_offset
-            metadata.root_motion.x_offset = 0
-            metadata.root_motion.y_offset = y_offset
-            metadata.root_motion.z_offset = 0
+            metadata.root_motion_rot_bake_into = rot_bake_into
+            metadata.root_motion_x_bake_into = xz_bake_into
+            metadata.root_motion_y_bake_into = y_bake_into
+            metadata.root_motion_z_bake_into = xz_bake_into
+            metadata.root_motion_rot_offset = rot_offset
+            metadata.root_motion_x_offset = 0
+            metadata.root_motion_y_offset = y_offset
+            metadata.root_motion_z_offset = 0
 
         return matching_metadatas
 
@@ -202,7 +206,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
         for clip in master_action.unity_clips:
             if clip.name != old_clip_name:
                 continue
-            
+
             new_clip = new_action.unity_clips.add()
             new_clip.copy_from(clip)
 
@@ -218,7 +222,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
             new_clip.frame_start -= frame_shift
             new_clip.frame_end -= frame_shift
             break
-        
+
         new_action.unity_metadata.split_from = master_action
         master_action.unity_metadata.clips_protected = True
         return new_clip
@@ -226,6 +230,6 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
     def full_frame_range(self):
         self.frame_start = self.action.frame_range[0]
         self.frame_end = self.action.frame_range[1]
-    
+
     def refresh_keys(self):
         cspy.actions.copy_from_action_range(self.source_action, self.action, self.source_frame_start, self.source_frame_end, self.source_frame_shift)

@@ -16,7 +16,7 @@ class VIEW_3D_PT_Pose_Correction(_PT_PC_, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Pan
     bl_icon = cspy.icons.GROUP_BONE
 
     def do_draw(self, context, scene, layout, obj):
-        arm = context.active_object        
+        arm = context.active_object
         pose = arm.pose
         bone = context.active_pose_bone
 
@@ -39,7 +39,7 @@ class VIEW_3D_PT_Pose_Correction_01_LOC(_PT_PC_AB, UI.VIEW_3D.UI.Tool, PT_, bpy.
         pose = arm.pose
         bone = context.active_pose_bone
         pose_correction = bone.pose_correction
-        
+
         row = layout.row(align=True)
         #row.alignment = 'EXPAND'
 
@@ -52,7 +52,7 @@ class VIEW_3D_PT_Pose_Correction_01_LOC(_PT_PC_AB, UI.VIEW_3D.UI.Tool, PT_, bpy.
         valid = pose_correction.get_poll_valid(context)
 
         if pose_correction.location_correction_type == 'LOCK':
-            
+
             row.label(text='Ref. Location')
             row.prop(pose_correction, 'reference_location', text='')
             row = layout.row(align=True)
@@ -71,11 +71,11 @@ class VIEW_3D_PT_Pose_Correction_01_LOC(_PT_PC_AB, UI.VIEW_3D.UI.Tool, PT_, bpy.
 
             nt = pose_correction.location_negate_type
 
-            if nt == 'OFFSET' or nt == 'EXACT':        
+            if nt == 'OFFSET' or nt == 'EXACT':
                 row = layout.row()
                 row.alert = alerting
                 row.prop_search(pose_correction, 'location_negate_bone_name', pose, 'bones', text='Bone')
-            
+
             row = layout.row()
 
             if nt == 'OFFSET':
@@ -96,13 +96,13 @@ class VIEW_3D_PT_Pose_Correction_01_LOC(_PT_PC_AB, UI.VIEW_3D.UI.Tool, PT_, bpy.
         row = box.row(align=True)
         row.alert = alerting
         row.enabled = not row.alert and valid
-        
+
         rwall = row.operator(PC_OT_correct_pose_location.bl_idname, text='', icon=cspy.icons.PREV_KEYFRAME)
         rw    = row.operator(PC_OT_correct_pose_location.bl_idname, text='', icon=cspy.icons.REW)
         cur   = row.operator(PC_OT_correct_pose_location.bl_idname)
         ff    = row.operator(PC_OT_correct_pose_location.bl_idname, text='', icon=cspy.icons.FF)
         ffall = row.operator(PC_OT_correct_pose_location.bl_idname, text='', icon=cspy.icons.NEXT_KEYFRAME)
-        
+
         rwall.loop, rwall.advance, rwall.forward = True,  True,  False
         rw.loop,    rw.advance,    rw.forward = False, True,  False
         cur.loop,   cur.advance,   cur.forward = False, False,  False

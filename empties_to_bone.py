@@ -7,8 +7,8 @@ from cspy.bones import *
 
 
 TARGETS = ['ACTION', 'ACTION NAME', 'FILE', 'DIR']
-TARGETS_ENUM =  cspy.utils.create_enum(TARGETS)
-TARGETS_ENUM_DEF = 'ACTION'
+TARGET_ENUM =  cspy.utils.create_enum(TARGETS)
+TARGET_ENUM_DEF = 'ACTION'
 
 class EB_blender_version:
     _string = bpy.app.version_string
@@ -109,7 +109,7 @@ def _initialize_armature():
 
     if scn.eb_source_object:
         cspy.utils.set_object_active(scn.eb_source_object)
-        
+
     # Create armature and bones
     # add a new armature
     empty = bpy.context.active_object
@@ -398,7 +398,7 @@ def _constrain_bones(bones_dict):
         dt_cns = bone.constraints.new("DAMPED_TRACK")
         target_empty_name = 'end.{0}'.format(emp.name)
         target_empty = bpy.data.objects.get(target_empty_name)
-                
+
         dt_cns.target = target_empty
 
 def _duplicate_armature():

@@ -11,12 +11,12 @@ class AM_PT_AnimationMetadata():
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_ARMATURE_action(context)        
+        return POLL.active_ARMATURE_action(context)
 
     def do_draw(self, context, scene, layout, obj):
         action = obj.animation_data.action
 
-        action.animation_metadata.draw(context, layout)
+        action.animation_metadata.draw(context, layout, AM_OT_check_properties.bl_idname)
 
 class VIEW_3D_PT_UI_Tool_AM_AnimationMetadata(UI.VIEW_3D.UI.Tool, AM_PT_AnimationMetadata, PT_, bpy.types.Panel):
     bl_idname='VIEW_3D_UVIEW_3D_PT_UI_Tool_AM_AnimationMetadataI_Tool_AM_PT_AnimationMetadata'

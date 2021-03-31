@@ -74,6 +74,15 @@ class VIEW_3D_PT_UI_Tool_Actions(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
         col.operator(ACT_OT_Group_Actions_By_Bone.bl_idname)
 
         col.operator(ACT_OT_combine_all_actions.bl_idname)
+        col.operator(ACT_OT_delete_bone_all.bl_idname)
+
+        row1 = col.row(align=True)
+        row1.prop(scene, 'bone_rename_old')
+        row1.prop(scene, 'bone_rename_new')
+        row2 = col.row(align=True)
+        op = row2.operator(ACT_OT_rename_bone_all.bl_idname)
+        op.old = scene.bone_rename_old
+        op.new = scene.bone_rename_new
 
 
 
@@ -150,6 +159,10 @@ class DOPESHEET_EDITOR_PT_UI_Tool_Keyframe_All(bpy.types.Panel, PT_, UI.DOPESHEE
 
 def register():
     bpy.types.Object.action_op_helper = bpy.props.PointerProperty(type=ActionOpHelper)
+    bpy.types.Scene.bone_rename_old = bpy.props.StringProperty(name="Old Name")
+    bpy.types.Scene.bone_rename_new = bpy.props.StringProperty(name="New Name")
 
 def unregister():
     del bpy.types.Object.action_op_helper
+    del bpy.types.Scene.bone_rename_old
+    del bpy.types.Scene.bone_rename_new

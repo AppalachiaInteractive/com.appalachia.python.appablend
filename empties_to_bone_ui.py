@@ -83,7 +83,7 @@ def register():
     bpy.types.Scene.eb_bone_scale = bpy.props.FloatProperty(default=1.0, name="Bone Scale")
     bpy.types.Scene.eb_source_object = bpy.props.PointerProperty(type=bpy.types.Object, name="Source Object")
     bpy.types.Scene.eb_target_armature = bpy.props.PointerProperty(type=bpy.types.Object, name="Target Armature")
-    bpy.types.Scene.eb_target_type = bpy.props.EnumProperty(name='Target Type', items=TARGETS_ENUM, default=TARGETS_ENUM_DEF)
+    bpy.types.Scene.eb_target_type = bpy.props.EnumProperty(name='Target Type', items=TARGET_ENUM, default=TARGET_ENUM_DEF)
     bpy.types.Scene.eb_target_action = bpy.props.PointerProperty(type=bpy.types.Action, name="Target Action")
     bpy.types.Scene.eb_target_action_name = bpy.props.StringProperty(default='', name="Target Action Name")
     bpy.types.Scene.eb_target_file = bpy.props.StringProperty(default='', name="Target Action Name", subtype=subtypes.StringProperty.Subtypes.FILE_PATH)

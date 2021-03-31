@@ -23,8 +23,8 @@ class PoseCorrection(bpy.types.PropertyGroup):
     reference_location: bpy.props.FloatVectorProperty(name='Reference Point', subtype=subtypes.FloatVectorProperty.Subtypes.TRANSLATION)
     location_handle_bone_name: bpy.props.StringProperty(name='Correction Bone')
     influence_location: bpy.props.FloatProperty(name='Influence', default=1.0,min=0.0,max=1.0)
-    reference_location_frame: bpy.props.IntProperty(name="Frame")    
-    
+    reference_location_frame: bpy.props.IntProperty(name="Frame")
+
     location_negate_bone_name: bpy.props.StringProperty(name='Negate Bone')
     location_negate_type: bpy.props.EnumProperty(name='Type', items=NEGATE_TYPE_ENUM, default=NEGATE_TYPE_ENUM_DEF)
     negate_co_offset: bpy.props.FloatVectorProperty(name='Negation Offset', subtype=subtypes.FloatVectorProperty.Subtypes.TRANSLATION)
@@ -52,7 +52,7 @@ class PoseCorrection(bpy.types.PropertyGroup):
             return self.influence_location * (self.reference_location - self.get_location())
         elif self.location_correction_type == 'NEGATE':
             bl = self.get_location()
-            
+
             if self.location_negate_type == 'EXACT':
                 nl = self.get_location_by_bone(self.location_negate_bone_name)
             elif self.location_negate_type == 'OFFSET':
@@ -80,7 +80,7 @@ class PoseCorrection(bpy.types.PropertyGroup):
             return (nb != '' and (nb not in disconnected_bone_names and nb in child_bone_names))
 
         return False
-        
+
     def get_poll_valid(self, context):
         if self.location_correction_type == 'LOCK':
             return context.scene.frame_current != self.reference_location_frame
@@ -102,14 +102,14 @@ class PoseCorrection(bpy.types.PropertyGroup):
         if other_bone_name == '' or not other_bone_name in armature.pose.bones:
             return []
 
-        other_bone = armature.pose.bones[other_bone_name]        
-        
+        other_bone = armature.pose.bones[other_bone_name]
+
         pose_bone_world_matrix = armature.matrix_world @ obj_correction_matrix @ pose_bone.matrix
         neg_pose_bone_world_matrix = armature.matrix_world @ neg_obj_correction_matrix @ pose_bone.matrix
-        
+
         other_bone_world_matrix = armature.matrix_world @ obj_correction_matrix @ other_bone.matrix
         neg_other_bone_world_matrix = armature.matrix_world @ neg_obj_correction_matrix @ other_bone.matrix
-        
+
         if self.location_correction_type == 'LOCK':
             other_bone.matrix = other_bone_world_matrix
             return [other_bone.name]

@@ -1,29 +1,37 @@
 import bpy
 
 def copy_from_to(f, t):
+    try:
+        from_props = set(dir(f))
+        to_props = set(dir(t))
 
-    from_props = set(dir(f))
-    to_props = set(dir(t))
-    common_props = from_props.intersection(to_props)
+        common_props = [prop for prop in from_props.intersection(to_props) if (
+            not prop.startswith('_') and
+            not prop == 'float_array' and
+            not prop.startswith("bl_") and
+            not prop.startswith("rna_") and
+            not callable(getattr(f, prop))
+        )]
 
-    for prop in common_props:
-        if prop.startswith('_') or prop.startswith("bl_") or prop.startswith("rna_"):
-            continue
-        val = getattr(f, prop)
+        for prop in common_props:
+            val = getattr(f, prop)
 
-        if callable(val):
-            continue
+            copy = getattr(val, 'copy_from', None)
 
-        copy = getattr(val, 'copy_from', None)
+            if copy and callable(copy):
+                val_to = getattr(t, prop)
+                copy_to = getattr(val_to, 'copy_from', None)
 
-        if copy and callable(copy):
-            val_to = getattr(t, prop)
-            copy_to = getattr(val_to, 'copy_from', None)
+                copy_to(val)
 
-            copy_to(val)
+            else:
+                setattr(t, prop, val)
+    except Exception as e:
+        namef = getattr(f, 'name', str(f))
+        namet = getattr(t, 'name', str(t))
 
-        else:
-            setattr(t, prop, val)       
+        print('copy_from_to: [{0}] to [{1}]: {2}'.format(namef, namet, e))
+        raise
 
 def get_logging_name(obj):
     try:
@@ -59,7 +67,7 @@ def create_enum_dict(enum_items):
         key = enum_items[description]
         item = (key, description, description)
         enums.append(item)
-        
+
     return enums
 
 def enumerate_reversed(L):
@@ -89,7 +97,7 @@ def set_object_active(obj, unselect_previous=True):
     return old
 
 def enter_mode(new_active_object, new_mode, unselect_current=True):
-    print('Entering mode {0} with active object {1}'.format(new_mode, new_active_object.name))
+    print('Entering {0} ({1})'.format(new_mode, new_active_object.name))
     previous_active_object = bpy.context.view_layer.objects.active
     previous_active_object_mode = previous_active_object.mode
 
@@ -108,7 +116,7 @@ def enter_mode(new_active_object, new_mode, unselect_current=True):
         bpy.context.view_layer.objects.active = new_active_object
 
     if new_active_object_mode != new_mode:
-        print(new_active_object_mode, new_mode)
+        #print(new_active_object_mode, new_mode)
         bpy.ops.object.mode_set(mode=new_mode, toggle=False)
 
     return previous_active_object, previous_active_object_mode
@@ -118,8 +126,7 @@ def exit_mode(new_active_object, new_mode, unselect_current=True):
     previous_active_object = bpy.context.view_layer.objects.active
     previous_active_object_mode = previous_active_object.mode
 
-    print('Exiting mode {0} with active object {1}'.format(previous_active_object_mode, previous_active_object.name))
-    print('Returning to mode {0} with active object {1}'.format(new_mode, new_active_object.name))
+    print('Exiting {0} ({1}). Returning to {2} ({3})'.format(previous_active_object_mode, previous_active_object.name, new_mode, new_active_object.name))
 
     new_active_object_mode = new_active_object.mode
 

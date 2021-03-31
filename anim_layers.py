@@ -6,30 +6,30 @@ from cspy import anim_layers_bake
 
 def check_handler(self, context):
     '''A main function that performs a series of checks using a handler'''
-    
+
     obj = bpy.context.object
     if obj is None:
         return
     anim_data = obj.animation_data
-            
+
     if anim_data is None or not len(obj.Anim_Layers) or not hasattr(anim_data, 'action'):
         return
-    
+
     if obj.select_get() == False or not hasattr(anim_data, 'nla_tracks') or not obj.als.track_list:
         return
-    
+
     nla_tracks = anim_data.nla_tracks
-    
+
     #check if a new track was added within the NLA
     if len(nla_tracks[:-1]) > len(obj.Anim_Layers):
         check_new_track(nla_tracks, obj)
         return
-    
+
     #check if a new track was removed within the NLA
-    if len(nla_tracks[:-1]) < len(obj.Anim_Layers):           
+    if len(nla_tracks[:-1]) < len(obj.Anim_Layers):
         check_del_track(nla_tracks, obj)
         return
-    
+
     #check if subtrack was removed
     if bpy.context.active_operator is not None:
         if bpy.context.active_operator.name in ['Add Action Strip', 'Delete Strips', 'Move Channels']:
@@ -39,16 +39,16 @@ def check_handler(self, context):
             return
         if bpy.context.active_operator.name in ['Transform', 'Delete Keyframes'] and obj.als.edit_all_keyframes:
             edit_all_keyframes()
-    
+
     #continue if locked
     if obj.Anim_Layers[obj.track_list_index].lock:
-        return   
+        return
 
     check_influence(nla_tracks[obj.track_list_index])
-    
+
     if anim_data.action_blend_type != 'ADD':
-        anim_data.action_blend_type = 'ADD' 
-        
+        anim_data.action_blend_type = 'ADD'
+
     if obj.als.view_all_keyframes:
         hide_view_all_keyframes(obj, anim_data)
         check_selected_bones(obj)
@@ -62,18 +62,18 @@ def check_handler(self, context):
             continue
         update_action(obj)
         #checking the value for comparison before the intial keyframe is set, because of the scale reseting to 0 bug
-        check_fcurves(AL_item, obj)        
-        
+        check_fcurves(AL_item, obj)
+
 def base_initial_key(obj, anim_data):
     '''Checks the transformation on the Replace layer and the first keyframe and comparing it to the value before it was added'''
     bones = []
     if obj.type == 'ARMATURE':
         bones = [bone.name for bone in obj.pose.bones]
     transform_types = ['location', 'rotation_euler', 'rotation_quaternion', 'scale']
-    
+
     for fcu in anim_data.action.fcurves:
         if len(fcu.keyframe_points) != 1:
-            continue  
+            continue
         transform = fcu.data_path.split('.')[-1]
         if transform == 'location':
             continue
@@ -95,7 +95,7 @@ def base_initial_key(obj, anim_data):
                 else:
                     influence = track.strips[0].influence
                 added_value += fcu_track.evaluate(frame)*influence
-       
+
         #check if the fcurve is from a bone and not the object and get the value of the property
         if obj.type == 'ARMATURE' and fcu.data_path not in transform_types:
             bone = fcu.data_path.split('"')[1]
@@ -114,15 +114,15 @@ def base_initial_key(obj, anim_data):
         else:
             obj_transform = getattr(obj, transform)
             value = obj_transform[fcu.array_index]
-        
+
         #apply the original value to the initial keyframe of the fcurve minus the value of the other layers
         if value != fcu.keyframe_points[0].co[1]:
-            
+
             fcu.keyframe_points[0].co[1] = value - added_value
             fcu.keyframe_points.update()
-           
+
     return {'FINISHED'}
-                
+
 def check_fcurves(AL_item, obj):
     '''checks if there are new fcurves'''
     if obj is None:
@@ -134,7 +134,7 @@ def check_fcurves(AL_item, obj):
     blend_types = {'REPLACE', 'COMBINE'}
     if anim_data.nla_tracks[obj.track_list_index].strips[0].blend_type not in blend_types:
         return
-    
+
     if action:
         if AL_item.fcurves != len(action.fcurves):
             base_initial_key(obj, anim_data)
@@ -161,40 +161,40 @@ def check_new_track(nla_tracks, obj):
         #of the sub_track is still in the same location then keep it
         elif track == sub_track and i == len(nla_tracks)-1:
             register_layers(nla_tracks)
-                      
+
 #check if a track was deleted outside of animation layers
 def check_del_track(nla_tracks, obj):
     '''Check if a layer was deleted outside of animation layers, keep only subtract'''
     if not len(nla_tracks):
         obj.Anim_Layers.clear()
-        visible_layers(obj) 
-        return    
+        visible_layers(obj)
+        return
     try:
         global sub_track
     except NameError:
         register_layers(nla_tracks)
-    
+
     if len(nla_tracks)==1 and sub_track == nla_tracks[0]:
         obj.Anim_Layers.clear()
         nla_tracks.remove(nla_tracks[0])
         return
-    
+
     #check if sub_track is still there
     if sub_track == nla_tracks[-1]:
         if obj.track_list_index > len(nla_tracks)-2:
             obj.track_list_index = len(nla_tracks)-2
         visible_layers(obj)
         return
-    
+
     #if sub_track is not there then update it and all the tracks
     register_layers(nla_tracks)
     if obj.track_list_index > len(obj.Anim_Layers)-1 and obj.track_list_index:
         obj.track_list_index = len(obj.Anim_Layers)-1
-                           
+
 def check_influence(track):
-    '''check and update the influence property. 
+    '''check and update the influence property.
     influence is a bit buggy and didn't update in realtime so I've added it an extra callback'''
-    global keys 
+    global keys
     if track.strips[0].fcurves[0].mute or not len(track.strips[0].fcurves[0].keyframe_points) or bpy.context.scene.tool_settings.use_keyframe_insert_auto:
         if 'keys' in globals():
             del keys
@@ -207,7 +207,7 @@ def check_influence(track):
     #check if the keyframe points values have changed
     if keys != [tuple(key.co) for key in track.strips[0].fcurves[0].keyframe_points]:
         track.strips[0].fcurves[0].update()
-    keys = [tuple(key.co) for key in track.strips[0].fcurves[0].keyframe_points]    
+    keys = [tuple(key.co) for key in track.strips[0].fcurves[0].keyframe_points]
 
 def update_action(obj):
     '''Check if a different action was selected or added in the action editor and update it into the current layer'''
@@ -226,20 +226,20 @@ def update_action(obj):
     anim_data.nla_tracks[-1].strips[0].action = anim_data.action
     #update the layer strip with the current action
     anim_data.nla_tracks[obj.track_list_index].strips[0].action = anim_data.action
-    return 
-          
+    return
+
 def update_sub_track(nla_tracks, obj):
     if len(nla_tracks[-1].strips) and len(nla_tracks) > 1:
         if nla_tracks[-1].strips[0].blend_type == 'SUBTRACT':
             sub_track = nla_tracks[-1]
             return sub_track
-           
+
     #If tracks were removed then update track_list_index into index property
     if obj.track_list_index > len(nla_tracks)-1:
         index = len(nla_tracks)-1
     else:
         index = obj.track_list_index
-        
+
     #make sure there is a strip with an action before adding a subtrack
     if len(nla_tracks[index].strips):
         action = nla_tracks[index].strips[0].action
@@ -253,18 +253,18 @@ def use_animated_influence(strip):
         return
     strip.use_animated_influence = True
     strip.keyframe_delete(strip.fcurves[0].data_path, frame=0)
-    strip.influence = 1 
+    strip.influence = 1
     for fcu in strip.fcurves:
         if 'influence' in fcu.data_path:
-            fcu.mute = True                                                                                   
-    
+            fcu.mute = True
+
 def register_layers(nla_tracks):
     obj = bpy.context.object
     global sub_track
 
     #check if the top track can be assigned as a subtrack
     sub_track = update_sub_track(nla_tracks, obj)
-    
+
     #subscribe to the name of the track
     bpy.msgbus.clear_by_owner(obj)
     subscribe_to_track_name(obj)
@@ -275,7 +275,7 @@ def register_layers(nla_tracks):
         if track.is_solo:
             track.is_solo = False
             obj.Anim_Layers[i].solo = True
-            
+
         if len(track.strips) != 1 or track.strips[0].type == 'META' and len(obj.Anim_Layers) > i+1:
             obj.Anim_Layers[i].lock = True
             continue
@@ -284,12 +284,12 @@ def register_layers(nla_tracks):
         strip.frame_start = 0
         strip.use_sync_length = False
         use_animated_influence(strip)
-        
-      
+
+
 #updating the ui list with the nla track names
 def visible_layers(obj):
     '''Creates a list of all the tracks without the top subtrack for the UI List'''
-    nla_tracks = obj.animation_data.nla_tracks    
+    nla_tracks = obj.animation_data.nla_tracks
     mute = []
     lock = []
     solo = []
@@ -299,7 +299,7 @@ def visible_layers(obj):
         mute.append(layer.mute)
         lock.append(layer.lock)
         solo.append(layer.solo)
-    
+
     #check if a layer was removed and adjust the stored properties
     if len(nla_tracks[:-1]) < len(obj.Anim_Layers):
         removed = 0
@@ -309,19 +309,19 @@ def visible_layers(obj):
                 lock.pop(i - removed)
                 solo.pop(i - removed)
                 removed += 1
-               
+
     #check if a layer was added and adjust the stored properties
     if len(nla_tracks[:-1]) > len(obj.Anim_Layers):
         obj.Anim_Layers.update()
         for i, track in enumerate(nla_tracks[:-1]):
-            if track.name not in obj.Anim_Layers:   
+            if track.name not in obj.Anim_Layers:
                 mute.insert(i, False)
                 lock.insert(i, False)
-                solo.insert(i, False)  
-                    
-    #write layers             
+                solo.insert(i, False)
+
+    #write layers
     obj.Anim_Layers.clear()
-    
+
     for i, track in enumerate(nla_tracks[:-1]):
         layer = obj.Anim_Layers.add()
         layer.name = track.name
@@ -330,20 +330,20 @@ def visible_layers(obj):
             layer.mute = mute[i]
             layer.lock = lock[i]
             if solo[i]:
-                layer.solo = solo[i]  
-    
+                layer.solo = solo[i]
+
 
 def layer_mute(self, context):
     obj = context.object
     index = list(obj.Anim_Layers).index(self)
     obj.animation_data.nla_tracks[index].mute = self.mute
-    
+
     #Exclude muted layers from view all keyframes
     if obj.als.view_all_keyframes:
         obj.als.view_all_keyframes = True
-    
+
 def layer_solo(self, context):
- 
+
     obj = context.object
     index = list(obj.Anim_Layers).index(self)
 
@@ -370,25 +370,25 @@ def layer_solo(self, context):
         #when turned off restore track mute from the layers mute property
         for i, track in enumerate(obj.animation_data.nla_tracks[:-1]):
             track.mute = obj.Anim_Layers[i].mute
-            
+
     #obj.select_set(True)
-    
+
 def layer_lock(self, context):
 
     obj = context.object
     index = list(obj.Anim_Layers).index(self)
     nla_tracks = obj.animation_data.nla_tracks
-    
+
     if not self.lock:
         if len(nla_tracks[index].strips) != 1 or nla_tracks[index].strips[0].type == 'META':# and not self.lock:
             self.lock = True
     if index == obj.track_list_index:
         obj.track_list_index = obj.track_list_index
-        
+
     #Exclude locked layers from view all keyframes
     if obj.als.view_all_keyframes:
         obj.als.view_all_keyframes = True
-         
+
 def unique_name(collection, name):
     '''add numbers to tracks if they have the same name'''
     if name not in collection:
@@ -404,22 +404,22 @@ def unique_name(collection, name):
     return name + '.' + str(nr).zfill(3)
 
 def layer_name_update(self, context):
-    
+
     #if layer name exists then add a unique name
     layer_names = [layer.name for layer in context.object.Anim_Layers if layer != self]
     if self.name in layer_names:
         self.name = unique_name(layer_names, self.name)
-    
+
     nla_tracks = context.object.animation_data.nla_tracks
     index = list(context.object.Anim_Layers).index(self)
     if self.name == nla_tracks[index].name:
         return
     nla_tracks[index].name = self.name
-    
+
 def animlayers_undo_pre(self, context):
     '''clear scene end subsciption because it was adding a subsciption on every undo'''
     bpy.msgbus.clear_by_owner(bpy.context.scene)
-   
+
 def animlayers_undo_post(self, context):
     '''clear scene end subsciption because it was adding a subsciption on every undo'''
     obj = bpy.context.object
@@ -461,15 +461,15 @@ def scene_update_callback(scene):
             if len(track.strips) == 1:
                 track.strips[0].action_frame_end = frame_end
                 track.strips[0].frame_end = frame_end
-            
+
 
 #Subscribe to the scene frame_end
 def subscribe_to_frame_end(scene):
     '''subscribe_to_frame_end and frame preview end'''
-    
+
     subscribe_end = scene.path_resolve("frame_end", False)
     subscribe_preview_end = scene.path_resolve("frame_preview_end", False)
-    
+
     bpy.msgbus.subscribe_rna(
         key=subscribe_end,
         # owner of msgbus subcribe (for clearing later)
@@ -478,16 +478,16 @@ def subscribe_to_frame_end(scene):
         args=(scene,),
         # Callback function for property update
         notify=scene_update_callback,)
-        
+
     bpy.msgbus.subscribe_rna(
         key=subscribe_preview_end,
         owner=scene,
         args=(scene,),
         notify=scene_update_callback,)
-        
+
     bpy.msgbus.publish_rna(key=subscribe_end)
     bpy.msgbus.publish_rna(key=subscribe_preview_end)
-    
+
     #global frame_end
     #frame_end = True
 
@@ -495,17 +495,17 @@ def track_update_callback(*args):
     '''update layers with the tracks name'''
     obj = bpy.context.object
     nla_tracks = obj.animation_data.nla_tracks
-    
+
     for i, track in enumerate(nla_tracks[:-1]):
         if track.name != obj.Anim_Layers[i].name:
             obj.Anim_Layers[i].name = track.name
-    
+
 def subscribe_to_track_name(obj):
     '''Subscribe to the name of track'''
-    
+
     #subscribe_track = nla_track.path_resolve("name", False)
     subscribe_track = (bpy.types.NlaTrack, 'name')
-    
+
     bpy.msgbus.subscribe_rna(
         key=subscribe_track,
         # owner of msgbus subcribe (for clearing later)
@@ -514,7 +514,7 @@ def subscribe_to_track_name(obj):
         args=(obj,obj.animation_data.nla_tracks,),
         # Callback function for property update
         notify=track_update_callback,)
-        
+
     bpy.msgbus.publish_rna(key=subscribe_track)
 
 def influence_update_callback(*args):
@@ -526,20 +526,20 @@ def influence_update_callback(*args):
     if obj.animation_data is None:
         return
     if not len(obj.animation_data.nla_tracks):
-        return 
-    
+        return
+
     track = obj.animation_data.nla_tracks[obj.track_list_index]
     keyframes = track.strips[0].fcurves[0].keyframe_points
-    
+
     if track.strips[0].fcurves[0].mute or not len(keyframes):
         track.strips[0].fcurves[0].update()
         return
-    
+
     if bpy.context.scene.tool_settings.use_keyframe_insert_auto:
         track.strips[0].keyframe_insert(track.strips[0].fcurves[0].data_path, -1)
         track.strips[0].fcurves[0].update()
-    
-        
+
+
 def subscribe_to_influence(scene):
     '''Subscribe to the influence of the track'''
     subscribe_influence = (bpy.types.NlaStrip, 'influence')
@@ -551,7 +551,7 @@ def subscribe_to_influence(scene):
         args=(scene,),
         # Callback function for property update
         notify=influence_update_callback,)
-        
+
     bpy.msgbus.publish_rna(key=subscribe_influence)
 
 def update_track_list(self, context):
@@ -570,7 +570,7 @@ def update_track_list(self, context):
         if len(anim_data.nla_tracks[-1].strips):
             anim_data.nla_tracks[-1].strips[0].action = None
         return
-        
+
     #activate the current action of the layer
     anim_data.action_influence = 1
     current_action = anim_data.nla_tracks[obj.track_list_index].strips[0].action
@@ -589,7 +589,7 @@ def remove_handler(handler_key, handler):
     if handler_key in driver_namespace:
         if driver_namespace[handler_key] in handler:
             handler.remove(driver_namespace[handler_key])
-        del driver_namespace[handler_key] 
+        del driver_namespace[handler_key]
 
 def add_obj_to_animlayers(obj, anim_layer_objects):
     '''Add the current object to the scene animation layers'''
@@ -610,26 +610,26 @@ def add_obj_to_animlayers(obj, anim_layer_objects):
         if len(track.strips) != 1:
             return
         anim_data.action = track.strips[0].action
-    
+
 def check_animlayers_clear():
     if len(bpy.context.scene.AL_objects):
-        return        
+        return
     #clear all handlers and subsciptions
-    remove_handler("animlayers_checks", bpy.app.handlers.depsgraph_update_pre)      
+    remove_handler("animlayers_checks", bpy.app.handlers.depsgraph_update_pre)
     bpy.msgbus.clear_by_owner(bpy.context.scene)
 
-@persistent        
+@persistent
 def loadanimlayers(self, context):
     '''When loading a file check if the current selected object is with animlayers, if not then check if there is something else turned on'''
     #obj = bpy.context.object
     scene = bpy.context.scene
- 
+
     anim_layer_objects = [AL_item.object for AL_item in scene.AL_objects]
     #if the current object is not turned on, then check if another object is turned on
     subscribe = False
     for obj in bpy.context.scene.objects:
         if obj is None:
-            continue               
+            continue
         if obj.als.track_list:
             add_obj_to_animlayers(obj, anim_layer_objects)
             subscribe = True
@@ -644,7 +644,7 @@ def loadanimlayers(self, context):
         if handler_key not in driver_namespace:
             bpy.app.handlers.depsgraph_update_pre.append(check_handler)
             driver_namespace[handler_key] = check_handler
-    
+
 def turn_animlayers_on(self, context):
     '''Turning on and off the NLA with obj.als.track_list property'''
     #obj = bpy.context.object
@@ -662,7 +662,7 @@ def turn_animlayers_on(self, context):
                 if len(obj.Anim_Layers) == 0 and len(obj.animation_data.nla_tracks)>0:
                     bpy.ops.message.warning('INVOKE_DEFAULT')
                 else:
-                    start_animlayers(obj)      
+                    start_animlayers(obj)
         elif obj.animation_data.use_nla:
             #remove_handler("baselayer_checks", bpy.app.handlers.depsgraph_update_pre)
             if hasattr(anim_data, 'nla_tracks'):
@@ -680,10 +680,10 @@ def turn_animlayers_on(self, context):
                     scene.AL_objects.remove(i)
                     bpy.msgbus.clear_by_owner(obj)
                     break
-                   
+
         #check if anim layers on all the objects are turned off before removing the check handler
         check_animlayers_clear()
-        
+
 def start_animlayers(obj):
     #obj = bpy.context.object
     obj.animation_data.use_nla = True
@@ -691,7 +691,7 @@ def start_animlayers(obj):
     scene = bpy.context.scene
     handler_key = "animlayers_checks"
     remove_handler(handler_key, bpy.app.handlers.depsgraph_update_pre)
-                
+
     AnimLayer_objects = [AnimLayers.object for AnimLayers in scene.AL_objects]
     #check if there is already animlayer objects with subscriptions
     if not len(scene.AL_objects):
@@ -707,7 +707,7 @@ def start_animlayers(obj):
     if hasattr(obj.animation_data, 'nla_tracks'):
         if len(obj.animation_data.nla_tracks):
             obj.animation_data.nla_tracks[0].is_solo = False
-            
+
             #check for tracks with duplicated names
             nla_tracks = obj.animation_data.nla_tracks
             track_names = [track.name for track in nla_tracks]
@@ -715,14 +715,14 @@ def start_animlayers(obj):
                 if track_names.count(name) > 1:
                     track_names[i] = unique_name(track_names, name)
                     nla_tracks[i].name = track_names[i]
-            
+
             register_layers(nla_tracks)
-   
+
     if animlayers_undo_pre not in bpy.app.handlers.undo_pre:
         bpy.app.handlers.undo_pre.append(animlayers_undo_pre)
     if animlayers_undo_post not in bpy.app.handlers.undo_post:
         bpy.app.handlers.undo_post.append(animlayers_undo_post)
- 
+
     if len(obj.Anim_Layers):
         #update_track_list(self, context)
         obj.track_list_index = obj.track_list_index
@@ -730,7 +730,7 @@ def start_animlayers(obj):
     if handler_key not in driver_namespace:
         bpy.app.handlers.depsgraph_update_pre.append(check_handler)
         driver_namespace[handler_key] = check_handler
-        
+
 def add_substract_layer(nla_tracks, action):
     sub_track = nla_tracks.new()
     sub_track.name = "Subtract_Layer"
@@ -750,17 +750,17 @@ def add_substract_layer(nla_tracks, action):
     sub_strip.blend_type = 'SUBTRACT'
     sub_track.lock = True
     return sub_track
- 
+
 #checks if the object has an action and if it exists in the NLA
 def action_search(action, nla_tracks):
     if action != None:
         for track in nla_tracks:
             for strip in track.strips:
                 if strip.action == action:
-                    return True                   
+                    return True
     else:
         return True
-    
+
     return False
 
 
@@ -769,27 +769,27 @@ def store_keyframes(fcu, keyframes):
     for key in fcu.keyframe_points:
         if key.co[0] not in keyframes:
             keyframes.append(key.co[0])
-            
+
     return keyframes
 
 def hide_view_all_keyframes(obj, anim_data):
     '''hide view all keyframes in the graph editor, to avoid the user changing the values
     and lock channels when edit all keyframes is turned off'''
-    
+
     for i, layer in enumerate(obj.Anim_Layers):
         if layer.lock or obj.track_list_index == i:
             continue
         fcu = anim_data.action.fcurves.find(layer.name, index = i)
         if fcu is None:
             continue
-        
+
         if not obj.als.edit_all_keyframes and not fcu.group.lock: #lock the groups if edit is not selected
             fcu.group.lock = True
-        
-        if bpy.context.area:    
+
+        if bpy.context.area:
             if bpy.context.area.type != 'GRAPH_EDITOR': #hide the channels when using graph editor
                 return
-        
+
         if not fcu.hide:
             fcu.hide = True
 
@@ -808,13 +808,13 @@ def unlock_edit_keyframes(self, context):
         else:
             fcu.group.lock = True
         return
-    
+
 def check_selected_bones(obj):
     '''running in the handler and checking if the selected bones were changed'''
     if not obj.als.only_selected_bones:
         return
     global selected_bones
-    try: 
+    try:
         selected_bones
     except NameError:
         selected_bones = bpy.context.selected_pose_bones
@@ -822,8 +822,8 @@ def check_selected_bones(obj):
     else:
         if selected_bones != bpy.context.selected_pose_bones:
             selected_bones = bpy.context.selected_pose_bones
-            obj.als.view_all_keyframes = True    
-        
+            obj.als.view_all_keyframes = True
+
 def fcurve_bones_path(obj, fcu):
     '''if only selected bones is used then check for the bones path in the fcurves data path'''
     if obj.als.only_selected_bones and obj.mode == 'POSE':
@@ -831,7 +831,7 @@ def fcurve_bones_path(obj, fcu):
         if fcu.data_path.split('].')[0]+']' not in selected_bones_path:
             return True
     return False
-            
+
 def only_selected_bones(self,context):
     '''assign selected bones to a global variable that will be checked in the handler'''
     if self.only_selected_bones:
@@ -841,18 +841,18 @@ def only_selected_bones(self,context):
     else:
         view_all_keyframes(self, context)
         del selected_bones
-    
+
 def edit_all_keyframes():
     obj = bpy.context.object
     anim_data = obj.animation_data
-    
+
     for i, layer in enumerate(obj.Anim_Layers): #look for the Anim Layers fcurve
         if layer.lock or anim_data.action is None or i == obj.track_list_index:
             continue
         fcu = anim_data.action.fcurves.find(layer.name, index = i)
         if fcu is None or not len(fcu.keyframe_points):
             continue
-        
+
         #check if keyframes were deleted
         if len(fcu_layers[fcu.data_path]) != len(fcu.keyframe_points) and bpy.context.active_operator.name == 'Delete Keyframes':
             keyframes = store_keyframes(fcu, [])
@@ -875,15 +875,15 @@ def edit_all_keyframes():
             keyframes = [key for key in keyframes if key not in del_keys]
             fcu_layers.update({fcu.data_path : keyframes})
             continue
-            
+
         #check if keyframes were moved to a different location
         old_keys = {}
         for key in fcu.keyframe_points: #creates dictionary of the old key frame values with their difference
             if key.co[0] != key.co[1]:
                 old_keys.update({key.co[1] : key.co[0] - key.co[1]})
                 key.co[1] = key.co[0]  # reset the keyframe
-                
-        #iterate through the fcurves in the original action    
+
+        #iterate through the fcurves in the original action
         for fcurve in anim_data.nla_tracks[i].strips[0].action.fcurves:
             if fcurve_bones_path(obj, fcurve):
                 continue
@@ -896,7 +896,7 @@ def edit_all_keyframes():
                     keyframe.handle_left[0] += difference
                     keyframe.handle_right[0] += difference
             #fcurve.update()
-                
+
 def view_all_keyframes(self, context):
     '''Creates new fcurves with the keyframes from the all the layers'''
     obj = bpy.context.object
@@ -904,9 +904,9 @@ def view_all_keyframes(self, context):
     #if animation layers is still not completly loaded then return
     if len(anim_data.nla_tracks[:-1]) != len(obj.Anim_Layers) or anim_data.action is None:
         return
-    #remove old Anim Layers fcurves 
+    #remove old Anim Layers fcurves
     for i, track in enumerate(anim_data.nla_tracks[:-1]):
-        fcu = anim_data.action.fcurves.find(track.name, index=i)    
+        fcu = anim_data.action.fcurves.find(track.name, index=i)
         if fcu: #remove all the fcurves/channels in the group and mark as removed
             if fcu.group.name == 'Anim Layers':
                 fcu.group.lock = False
@@ -916,8 +916,8 @@ def view_all_keyframes(self, context):
     if not self.view_all_keyframes: #If the option is uncheck then finish edit and return
         self.edit_all_keyframes = False
         return
-    global fcu_layers        
-    fcu_layers = {}      
+    global fcu_layers
+    fcu_layers = {}
     for i, track in enumerate(anim_data.nla_tracks[:-1]):
         if i == obj.track_list_index or track.strips[0].action is None or not len(track.strips[0].action.fcurves) or obj.Anim_Layers[i].lock:
             continue
@@ -929,15 +929,15 @@ def view_all_keyframes(self, context):
         #store all the keyframe locations from the fcurves of the layer
         for fcu in track.strips[0].action.fcurves:
             if fcu.group is not None:
-                if fcu.group.name == 'Anim Layers': 
+                if fcu.group.name == 'Anim Layers':
                     continue
             #if only selected bones is used then check for the bones
             if obj.als.only_selected_bones and obj.mode == 'POSE':
                 selected_bones = [bone.path_from_id() for bone in context.selected_pose_bones]
                 if fcu.data_path.split('].')[0]+']' not in selected_bones:
                     continue
-                
-            keyframes = store_keyframes(fcu, keyframes)          
+
+            keyframes = store_keyframes(fcu, keyframes)
         if not keyframes:
             continue
         for key in keyframes: #create new keyframes for all the stored keys
@@ -945,17 +945,17 @@ def view_all_keyframes(self, context):
             fcu_layer.keyframe_points[-1].co[0] = key
             fcu_layer.keyframe_points[-1].co[1] = key
             fcu_layer.keyframe_points[-1].interpolation = 'LINEAR'
-            fcu_layer.keyframe_points[-1].type = self.view_all_type    
+            fcu_layer.keyframe_points[-1].type = self.view_all_type
         fcu_layer.hide = True
         fcu_layer.update()
         #store the fcurves and keyframes
         fcu_layers.update({fcu_layer.data_path : keyframes})
-        
-        
+
+
         #Make sure lock is turned off when selecting new layer and edit is turned on
         if fcu_layer is not None and self.edit_all_keyframes:
-            fcu_layer.group.lock = False 
-                
+            fcu_layer.group.lock = False
+
 def redraw_areas(areas):
     for area in bpy.context.window_manager.windows[0].screen.areas:
         if area.type in areas:
@@ -977,7 +977,7 @@ def select_layer_bones(self, context):
             bone = fcu.data_path.split('"')[1]
             if bone in obj.data.bones:
                 obj.data.bones[bone].select = True
-        
+
 
 class AnimLayersSettings(bpy.types.PropertyGroup):
 
@@ -1008,7 +1008,7 @@ class AnimLayersItems(bpy.types.PropertyGroup):
     mute: bpy.props.BoolProperty(name="Mute", description="Mute Animation Layer", default=False, options={'HIDDEN'}, update=layer_mute)
     lock: bpy.props.BoolProperty(name="Lock", description="Lock Animation Layer", default=False, options={'HIDDEN'}, update=layer_lock)
     solo: bpy.props.BoolProperty(name="Solo", description="Solo Animation Layer", default=False, options={'HIDDEN'}, update=layer_solo)
-    
+
 class AnimLayersObjects(bpy.types.PropertyGroup):
     object: bpy.props.PointerProperty(name = "object", description = "objects with animation layers turned on", type=bpy.types.Object)
     fcurves: bpy.props.IntProperty(name='fcurves', description='helper to check if fcurves are changed', default=0)
