@@ -1,4 +1,27 @@
 import bpy
+import sys
+import os, traceback
+
+traceback_template = '''[EXCP] [%(note)s] File "%(filename)s", line %(lineno)s, in %(name)s %(type)s: %(message)s\n'''
+
+def print_exception(note):
+    exc_type, exc_value, exc_traceback = sys.exc_info() # most recent (if any) by default
+
+    traceback_details = {
+                         'note'    : note,
+                         'filename': exc_traceback.tb_frame.f_code.co_filename,
+                         'lineno'  : exc_traceback.tb_lineno,
+                         'name'    : exc_traceback.tb_frame.f_code.co_name,
+                         'type'    : exc_type.__name__,
+                         'message' : str(exc_value), # or see traceback._some_str()
+                        }
+
+    del(exc_type, exc_value, exc_traceback) 
+
+    print('-'*20)
+    print(traceback.format_exc()) 
+    print(traceback_template % traceback_details) 
+    print()
 
 def copy_from_to(f, t):
     try:
@@ -6,10 +29,10 @@ def copy_from_to(f, t):
         to_props = set(dir(t))
 
         common_props = [prop for prop in from_props.intersection(to_props) if (
-            not prop.startswith('_') and
-            not prop == 'float_array' and
+            not prop.startswith('_') and            
             not prop.startswith("bl_") and
             not prop.startswith("rna_") and
+            not prop in set(['int','float','bool','int_array','float_array','bool_array']) and
             not callable(getattr(f, prop))
         )]
 
@@ -95,54 +118,6 @@ def set_object_active(obj, unselect_previous=True):
     if unselect_previous and old and old != obj:
         old.select_set(state=False)
     return old
-
-def enter_mode(new_active_object, new_mode, unselect_current=True):
-    print('Entering {0} ({1})'.format(new_mode, new_active_object.name))
-    previous_active_object = bpy.context.view_layer.objects.active
-    previous_active_object_mode = previous_active_object.mode
-
-    new_active_object_mode = new_active_object.mode
-
-    if previous_active_object is not None and previous_active_object != new_active_object and unselect_current:
-        if bpy.context.mode != 'OBJECT':
-            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-        previous_active_object.select_set(False)
-
-    new_active_object.select_set(True)
-
-    new_active_object_mode = new_active_object.mode
-
-    if previous_active_object != new_active_object:
-        bpy.context.view_layer.objects.active = new_active_object
-
-    if new_active_object_mode != new_mode:
-        #print(new_active_object_mode, new_mode)
-        bpy.ops.object.mode_set(mode=new_mode, toggle=False)
-
-    return previous_active_object, previous_active_object_mode
-
-
-def exit_mode(new_active_object, new_mode, unselect_current=True):
-    previous_active_object = bpy.context.view_layer.objects.active
-    previous_active_object_mode = previous_active_object.mode
-
-    print('Exiting {0} ({1}). Returning to {2} ({3})'.format(previous_active_object_mode, previous_active_object.name, new_mode, new_active_object.name))
-
-    new_active_object_mode = new_active_object.mode
-
-    if previous_active_object is not None and previous_active_object != new_active_object and unselect_current:
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-        previous_active_object.select_set(False)
-
-    new_active_object.select_set(True)
-
-    if previous_active_object != new_active_object:
-        bpy.context.view_layer.objects.active = new_active_object
-
-    if new_active_object_mode != new_mode:
-        bpy.ops.object.mode_set(mode=new_mode, toggle=False)
-
-    return previous_active_object, previous_active_object_mode
 
 def get_rna_and_path(data_path):
 

@@ -5,7 +5,7 @@ from cspy.polling import POLL
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.animation_retargeting import *
 
-class AR_OPS_:
+class AR_OPS_():
     @classmethod
     def get_cache_data(cls, context):
         obj = context.active_object
@@ -179,7 +179,7 @@ class AR_OPS_:
 
         bpy.context.scene.frame_set(frame)
 
-class AR_OPS_Create_New_Constraint(AR_OPS_):
+class AR_OPS_Create_New_Constraint(AR_OPS_,OPS_):
 
     @classmethod
     def do_poll(cls, context):

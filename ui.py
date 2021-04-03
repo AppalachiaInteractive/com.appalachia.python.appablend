@@ -1,5 +1,6 @@
 import bpy
-import cspy.icons
+import cspy
+from cspy import icons, utils
 import math
 
 def get_rotation_euler(obj):
@@ -315,6 +316,10 @@ class UI:
         class UI:
             bl_space_type=_PT_SPACE_TYPE.GRAPH_EDITOR
             bl_region_type = _PT_REGION_TYPE.UI
+            class Tool:
+                bl_space_type=_PT_SPACE_TYPE.GRAPH_EDITOR
+                bl_region_type = _PT_REGION_TYPE.UI
+                bl_category = _PT_CATEGORY.TOOL
     class NLA_EDITOR:
         bl_space_type=_PT_SPACE_TYPE.NLA_EDITOR
         class UI:
@@ -418,6 +423,7 @@ class PT_():
     bl_icon = cspy.icons.ERROR
     bl_options = PT_OPTIONS.DEFAULT_CLOSED
     bl_label = 'UNDEFINED'
+    bl_order = 999999
 
     @classmethod
     def poll(cls, context):
@@ -427,16 +433,24 @@ class PT_():
                 print('[EXCP] {0}:  [do_poll]  Must correct call [{1}]'.format(cspy.utils.get_logging_name(cls), result))
                 return False
             return result
-        except Exception as inst:
-            print('{0}:  [do_poll]  {1}'.format(cspy.utils.get_logging_name(cls), inst))
+        except Exception:
+            utils.print_exception('do_poll')
             return False
 
     def draw_header(self, context):
         try:
             self.layout.label(icon=self.bl_icon)
-        except Exception as inst:
-            print('{0}:  [draw_header]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+            
+            scene = context.scene
+            layout = self.layout
+            obj = context.object
+            self.finish_header(context, scene, layout, obj)
+        except Exception:
+            utils.print_exception('draw_header')
             return
+
+    def finish_header(self, context, scene, layout, obj):
+        pass
 
     def draw(self, context):
         try:
@@ -444,7 +458,7 @@ class PT_():
             layout = self.layout
             obj = context.object
             self.do_draw(context, scene, layout, obj)
-        except Exception as inst:
-            print('{0}:  [do_draw]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+        except Exception:
+            utils.print_exception('do_draw')
             raise
     

@@ -2,6 +2,7 @@ import cspy
 from cspy import anim_layers
 from cspy.anim_layers import *
 from cspy.anim_layers_ops import *
+from cspy.ui import *
 
 
 class LAYERS_UL_list(bpy.types.UIList):
@@ -29,17 +30,31 @@ class LAYERS_UL_list(bpy.types.UIList):
     def invoke(self, context, event):
         pass
 
-class ANIMLAYERS_PT_Panel(bpy.types.Panel):
-    bl_label = "Animation Layers"
-    bl_idname = "ANIMLAYERS_PT_Panel"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = "UI"
-    bl_category = "Animation"
-
-
+class PT_AL_AnimLayers(PT_):
+    bl_order = 0
     @classmethod
     def poll(cls, context):
         return len(bpy.context.selected_objects)
+
+class PT_AL_AnimLayers_SUB(PT_):
+    bl_order = 1
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if not obj or not obj.als or not obj.als.track_list:
+            return False
+        if not len(context.selected_objects):
+            return False
+        if not len(obj.Anim_Layers) or not len(obj.animation_data.nla_tracks):
+            return False
+        if not hasattr(obj.animation_data, 'nla_tracks') or not len(obj.Anim_Layers) or obj.Anim_Layers[obj.track_list_index].lock: # not confirmed
+            return False
+        return True
+
+class VIEW_3D_PT_UI_Tool_AL_AnimLayers(UI.VIEW_3D.UI.Tool, PT_AL_AnimLayers, bpy.types.Panel):
+    bl_label = "Animation Layers"
+    bl_idname = "VIEW_3D_PT_UI_Tool_AL_AnimLayers"
+    bl_icon = cspy.icons.NLA
 
     def draw(self, context):
         obj = context.object
@@ -47,18 +62,19 @@ class ANIMLAYERS_PT_Panel(bpy.types.Panel):
             return
         layout = self.layout
 
-
-        layout.prop(obj.als, 'track_list')
-        layout.separator()
+        row = layout.row()
+        enabled = obj.als.track_list
+        icon = cspy.icons.CHECKBOX_HLT if enabled else cspy.icons.CHECKBOX_DEHLT
+        row.prop(obj.als, 'track_list', text='', icon=icon, toggle=True)
 
         if obj.als.track_list:
-            row = layout.row()
             row.template_list("LAYERS_UL_list", "", context.object, "Anim_Layers", context.object, "track_list_index", rows=2)
-
+            
             col = row.column(align=True)
             col.operator('anim.add_anim_layer', text="", icon = 'ADD')
             col.operator('anim.remove_anim_layer', text="", icon = 'REMOVE')
-            col.separator()
+            
+            col = row.column(align=True)
             col.operator("anim.layer_move_up", text="", icon = 'TRIA_UP')
             col.operator("anim.layer_move_down", text="", icon = 'TRIA_DOWN')
 
@@ -66,54 +82,80 @@ class ANIMLAYERS_PT_Panel(bpy.types.Panel):
                 return
             if not hasattr(obj.animation_data, 'nla_tracks') or not len(obj.Anim_Layers) or obj.Anim_Layers[obj.track_list_index].lock: # not confirmed
                 return
+           
             track = obj.animation_data.nla_tracks[obj.track_list_index]
 
             col=layout.column(align = True)
             row = col.row()
 
-            if not len(track.strips):
-                return
-
             row.prop(track.strips[0], 'influence', slider = True, text = 'Influence')
             icon = 'KEY_DEHLT' if track.strips[0].fcurves[0].mute else 'KEY_HLT'
             row.prop(track.strips[0].fcurves[0],'mute', invert_checkbox = True, expand = True, icon_only=True, icon = icon)
-            row = layout.row()
+            #row = layout.row()
             row.prop(track.strips[0], 'blend_type', slider = True, text = 'Blend')
 
-            merge_layers = layout.column()
+            row = layout.row(align=True)
             #merge_layers.operator("anim.layers_merge_down", text="New Baked Layer", icon = 'NLA')
-            merge_layers.operator("anim.layers_merge_down", text="Merge / Bake", icon = 'NLA_PUSHDOWN')
+            row.operator("anim.layers_merge_down", text="Merge / Bake", icon = 'NLA_PUSHDOWN')
 
-            duplicateanimlayer = layout.row(align=True)
-            duplicateanimlayer.operator('anim.duplicate_anim_layer', text="Duplicate Layer", icon = 'SEQ_STRIP_DUPLICATE')
+            #duplicateanimlayer = layout.row(align=True)
+            row.operator('anim.duplicate_anim_layer', text="Duplicate Layer", icon = 'SEQ_STRIP_DUPLICATE')
             icon = 'LINKED' if obj.als.linked else 'UNLINKED'
-            duplicateanimlayer.prop(obj.als, 'linked', icon_only=True, icon = icon)
+            row.prop(obj.als, 'linked', icon_only=True, icon = icon)
 
-            box = layout.box()
-            box.label(text= 'Active Action:')
-            box.template_ID(obj.animation_data, "action")
 
-            box = layout.box()
-            row = box.row()
-            row.operator("anim.bones_in_layer", text="Select Bones in Layer", icon = 'BONE_DATA')
-            row = box.row()
-            row.operator("anim.layer_reset_keyframes", text="Reset Key Layer ", icon = 'KEYFRAME')
-            row = box.row()
-            row.operator("anim.layer_cyclic_fcurves", text="Cyclic Fcurves", icon = 'FCURVE')
-            row.operator("anim.layer_cyclic_remove", text="Remove Fcurves", icon = 'X')
 
-            box = layout.box()
-            row = box.row()
-            row.label(text= 'Keyframes From Multiple Layers:')
+class VIEW_3D_PT_UI_Tool_AL_AnimLayers_040_ActiveAction(UI.VIEW_3D.UI.Tool, PT_AL_AnimLayers_SUB, bpy.types.Panel):
+    bl_label = "Active Action"
+    bl_idname = "VIEW_3D_PT_UI_Tool_AL_AnimLayers_040_ActiveAction"
+    bl_icon = cspy.icons.ACTION
+    bl_parent_id = VIEW_3D_PT_UI_Tool_AL_AnimLayers.bl_idname
+
+    def draw(self, context):
+        obj = context.object
+        layout = self.layout
+
+        track = obj.animation_data.nla_tracks[obj.track_list_index]
+
+        if not len(track.strips):
+            return
+            
+        box = layout.box()
+        box.template_ID(obj.animation_data, "action")
+
+        box = layout.box()
+        row = box.row()
+        row.operator("anim.bones_in_layer", text="Select Bones in Layer", icon = 'BONE_DATA')
+        #row = box.row()
+        row.operator("anim.layer_reset_keyframes", text="Reset Key Layer ", icon = 'KEYFRAME')
+        row = box.row()
+        row.operator("anim.layer_cyclic_fcurves", text="Cyclic Fcurves", icon = 'FCURVE')
+        row.operator("anim.layer_cyclic_remove", text="Remove Fcurves", icon = 'X')
+
+class VIEW_3D_PT_UI_Tool_AL_AnimLayers_050_MultipleLayers(UI.VIEW_3D.UI.Tool, PT_AL_AnimLayers_SUB, bpy.types.Panel):
+    bl_label = "Multiple Layers"
+    bl_idname = "VIEW_3D_PT_UI_Tool_AL_AnimLayers_050_MultipleLayers"
+    bl_icon = cspy.icons.SEQ_STRIP_META
+    bl_parent_id = VIEW_3D_PT_UI_Tool_AL_AnimLayers.bl_idname
+
+    def draw(self, context):
+        obj = context.object
+        layout = self.layout
+
+        track = obj.animation_data.nla_tracks[obj.track_list_index]
+        if not len(track.strips):
+            return
+            
+        box = layout.box()
+        row = box.row()
+        split = row.split(factor=0.4, align = True)
+        split.prop(obj.als, 'view_all_keyframes')
+        split.prop(obj.als, 'view_all_type')
+        if obj.als.view_all_keyframes:
             row = box.row()
             split = row.split(factor=0.4, align = True)
-            split.prop(obj.als, 'view_all_keyframes')
-            split.prop(obj.als, 'view_all_type')
-            if obj.als.view_all_keyframes:
-                row = box.row()
-                split = row.split(factor=0.4, align = True)
-                split.prop(obj.als, 'edit_all_keyframes')
-                split.prop(obj.als, 'only_selected_bones')
+            split.prop(obj.als, 'edit_all_keyframes')
+            split.prop(obj.als, 'only_selected_bones')
 
 def register():
 

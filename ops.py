@@ -1,7 +1,9 @@
 import bpy, cspy
 from bpy.types import Operator
+from cspy import utils, modes
 import time
 import inspect
+import sys, os
 
 
 class OPS_OPTION:
@@ -53,7 +55,7 @@ class OPS_(Operator):
                 return False
             return result
         except Exception as inst:
-            print('[EXCP] {0}:  [do_poll]  {1}'.format(cspy.utils.get_logging_name(cls), inst))
+            utils.print_exception(inst, 'do_poll')
             return False
 
     @classmethod
@@ -67,7 +69,7 @@ class OPS_(Operator):
         return {'CANCELLED'}
 
     def quit(self, context, active, mode):
-        cspy.utils.exit_mode(active, mode)
+        modes.exit_mode(active, mode)
         return {'FINISHED'}
 
     def execute(self, context):
@@ -84,9 +86,8 @@ class OPS_(Operator):
 
             if returning is None:
                 returning = self.finished()
-        except Exception as inst:
-            had_exception = True
-            print('[EXCP] {0}:  [do_execute]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+        except Exception:
+            utils.print_exception('do_execute')
             returning = self.cancelled()
         finally:
             context.preferences.edit.use_global_undo = use_global_undo
@@ -128,27 +129,27 @@ class OPS_MODAL(OPS_):
         try:
             if self.do_cancel(context, event):
                 return self.cancelled()
-        except Exception as inst:
-            print('[EXCP] {0}:  [do_cancel]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+        except Exception:
+            utils.print_exception('do_cancel')
             return self.cancelled()
 
         try:
             if self.do_continue(context, event):
                 try:
                     self.do_iteration(context, event)
-                except Exception as inst:
-                    print('[EXCP] {0}:  [do_iteration]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+                except Exception:
+                    utils.print_exception('do_iteration')
                     return self.cancelled()
 
                 return self.running_modal()
-        except Exception as inst:
-            print('[EXCP] {0}:  [do_continue]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+        except Exception:
+            utils.print_exception('do_continue')
             return self.cancelled()
 
         try:
             self.do_end(context, event)
-        except Exception as inst:
-            print('[EXCP] {0}:  [do_end]  {1}'.format(cspy.utils.get_logging_name(self), inst))
+        except Exception:
+            utils.print_exception('do_end')
             return self.cancelled()
 
         return self.finished()
@@ -173,3 +174,7 @@ class OPS_MODAL(OPS_):
 
     def do_end(self, context, event):
         pass
+    
+    
+    
+    

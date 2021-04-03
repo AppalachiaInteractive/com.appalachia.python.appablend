@@ -13,8 +13,9 @@ class UNITY_PANEL:
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_animation_data(context)
+        return POLL.active_unity_object(context)
 
+        
     def do_draw(self, context, scene, layout, obj):
         obj = get_active_unity_object(context)
         unity_settings = scene.unity_settings
@@ -24,20 +25,29 @@ class UNITY_PANEL:
 
         row.prop(unity_settings, 'mode')
 
+        row.separator()
+
+        if unity_settings.mode != 'ACTIVE':
+            row.prop_search(unity_settings, 'target_armature', bpy.data, 'objects', text='', icon=cspy.icons.ARMATURE_DATA)
+        
+        row.separator()
         row.prop(unity_settings, 'draw_sheets', toggle=True, text='', icon=unity_settings.icon_sheets)
         row.prop(unity_settings, 'draw_keyframes', toggle=True, text='', icon=unity_settings.icon_keys)
         row.prop(unity_settings, 'draw_clips', toggle=True, text='', icon=unity_settings.icon_clips)
+        
+        obj = get_active_unity_object(context)
 
-        if unity_settings.mode != 'ACTIVE':
-            row = col.row(align=True)
-            row.prop(unity_settings, 'target_armature')
+        if obj:
+            row.separator()
+            row.prop(obj.data, "pose_position", expand=True)
+
 
 class _CLIP_SUBPANEL_REQ():
     @classmethod
     def subpanel_poll(cls, context):
         obj = get_active_unity_object(context)
         return (
-                POLL.active_object_animation_data(context) and
+                POLL.active_unity_object(context) and 
                 (POLL.unity_mode_SCENE(context) or obj is not None)
             )
 
@@ -53,7 +63,7 @@ class _CLIP_SUBPANEL_REQ():
 class _CLIP_SUBPANEL():
     @classmethod
     def subpanel_poll(cls, context):
-        return POLL.active_object_animation_data(context)
+        return POLL.active_unity_object(context)
 
     def do_draw(self, context, scene, layout, obj):
         obj = get_active_unity_object(context)
@@ -73,7 +83,7 @@ class _PT_Unity_000_Sheets():
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_animation_data(context) and context.scene.unity_settings.draw_sheets
+        return POLL.active_unity_object(context) and context.scene.unity_settings.draw_sheets
 
     def do_draw(self, context, scene, layout, obj):
         obj = get_active_unity_object(context)
@@ -99,7 +109,7 @@ class _PT_Unity_003_Keys():
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_animation_data(context) and context.scene.unity_settings.draw_keyframes
+        return POLL.active_unity_object(context) and context.scene.unity_settings.draw_keyframes
 
     def do_draw(self, context, scene, layout, obj):
         obj = get_active_unity_object(context)
@@ -176,7 +186,7 @@ class _PT_Unity_005_All_Clips(_PT_Unity_Clips_List):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.unity_mode_SCENE(context) and POLL.active_object_animation_data(context) and context.scene.unity_settings.draw_clips
+        return POLL.unity_mode_SCENE(context) and POLL.active_unity_object(context) and context.scene.unity_settings.draw_clips
 
     def draw_template_list(self, context, layout):
         scene = context.scene
@@ -193,7 +203,7 @@ class _PT_Unity_010_Clips(_PT_Unity_Clips_List):
 
     @classmethod
     def do_poll(cls, context):
-        return (not POLL.unity_mode_SCENE(context)) and POLL.active_object_animation_data(context) and context.scene.unity_settings.draw_clips
+        return (not POLL.unity_mode_SCENE(context)) and POLL.active_unity_object(context) and context.scene.unity_settings.draw_clips
 
     def draw_template_list(self, context, layout):
         obj = get_active_unity_object(context)
@@ -213,30 +223,33 @@ class _PT_Unity_020_Clip():
     @classmethod
     def do_poll(cls, context):
         obj = get_active_unity_object(context)
-        anim_data = POLL.active_object_animation_data(context)
+        anim_data = POLL.active_unity_object(context)
         return ( anim_data and (POLL.unity_mode_SCENE(context) or (obj and obj.animation_data and obj.animation_data.action)))
 
-    def do_draw(self, context, scene, layout, obj):
+    def finish_header(self, context, scene, layout, obj):
         obj = get_active_unity_object(context)
         action, unity_clip = get_unity_action_and_clip(context)
         if action is None or unity_clip is None:
             return
 
-        box = layout.box()
-        col = box.column(align=True)
-        row = col.row(align=True)
+        row = layout.row(align=True)
 
         row.label(text=unity_clip.name)
 
-        row.alignment='RIGHT'
+        r2 = row.split()
+
+        r2.alignment='RIGHT'
 
         draw_settings = scene.unity_settings
 
-        row.prop(draw_settings, 'draw_metadata',toggle=True, text='', icon=scene.unity_settings.icon_metadata)
-        row.prop(draw_settings, 'draw_root_motion',toggle=True, text='', icon=scene.unity_settings.icon_root_motion)
-        row.prop(draw_settings, 'draw_frames',toggle=True, text='', icon=scene.unity_settings.icon_frames)
-        row.prop(draw_settings, 'draw_pose',toggle=True, text='', icon=scene.unity_settings.icon_pose)
-        row.prop(draw_settings, 'draw_operations',toggle=True, text='', icon=scene.unity_settings.icon_operations)
+        r2.prop(draw_settings, 'draw_metadata',toggle=True, text='', icon=scene.unity_settings.icon_metadata)
+        r2.prop(draw_settings, 'draw_root_motion',toggle=True, text='', icon=scene.unity_settings.icon_root_motion)
+        r2.prop(draw_settings, 'draw_frames',toggle=True, text='', icon=scene.unity_settings.icon_frames)
+        r2.prop(draw_settings, 'draw_pose',toggle=True, text='', icon=scene.unity_settings.icon_pose)
+        r2.prop(draw_settings, 'draw_operations',toggle=True, text='', icon=scene.unity_settings.icon_operations)
+
+    def do_draw(self, context, scene, layout, obj):
+        pass
 
 class _PT_Unity_020_Clip_000_Metadata(_CLIP_SUBPANEL_REQ):
     bl_icon =  UnitySettings.icon_metadata
@@ -273,6 +286,7 @@ class _PT_Unity_020_Clip_000_Metadata(_CLIP_SUBPANEL_REQ):
         row_4b.prop(unity_clip, 'can_edit', toggle=True, text='', icon=cspy.icons.UNLOCKED)
         row_4b.enabled = True
 
+
 class _PT_Unity_020_Clip_010_RootMotion(_CLIP_SUBPANEL_REQ):
     bl_icon =  UnitySettings.icon_root_motion
     bl_label = 'Root Motion'
@@ -281,35 +295,153 @@ class _PT_Unity_020_Clip_010_RootMotion(_CLIP_SUBPANEL_REQ):
     def do_poll(cls, context):
         return cls.subpanel_poll(context) and context.scene.unity_settings.draw_root_motion
 
+    def draw_root_xyz_component(self, layout, unity_clip, axis):
+        l = axis.lower()
+        u = axis.upper()
+        icon= 'EVENT_{0}'.format(u)
+        pre = 'root_motion_{0}_'.format(l)
+
+        layout.prop(unity_clip, '{0}bake_into'.format(pre), icon=icon, text='', toggle=True) 
+        
+        prop_name = '{0}offset'.format(pre)
+
+        val = getattr(unity_clip, prop_name)
+
+        row = layout.row()
+
+        if val != 0:
+            row.alert = True
+
+        row.prop(unity_clip, prop_name, text=u)         
+
+        limits = [('limit_neg', '-'), ('limit_pos', '+')]
+        limit_props = [ ( 
+            '{0}{1}'.format(pre, limit[0]), 
+            '{0}{1}_val'.format(pre, limit[0]), 
+            limit[1] 
+            ) for limit in limits]
+
+        for limit_prop in limit_props:
+            r = layout.row()  
+            r.prop(unity_clip, limit_prop[0], text='', toggle=True, icon=cspy.icons.CON_LOCLIMIT)        
+            r = r.split()
+            r.enabled = getattr(unity_clip, limit_prop[0], False)
+            r.alert = getattr(unity_clip, limit_prop[0]) != 0
+            r.prop(unity_clip, limit_prop[1], text='Limit {0}'.format(limit_prop[2]))
+
+    def draw_root_node_start(self, layout, armature, unity_clip):
+        layout.prop_search(armature, 'original_root_node', bpy.data, 'objects', text='Original Root', icon=cspy.icons.BONE_DATA)
+        
+        b = layout.box()
+        h = b.row(align=True)
+        h.alignment='CENTER'
+        h.label(text='Root Node Start')
+
+        r = b.row()
+        col1 = r.column(align=True)
+        col2 = r.column(align=True)
+        col3 = r.column(align=True)
+
+        alert = False
+        val = unity_clip.root_node_start_location
+        if val[0] != 0 or val[1] != 0 or val[2] != 0:
+            alert = True
+        val = unity_clip.root_node_start_rotation
+        if val[0] != 0 or val[1] != 0 or val[2] != 0:
+            alert = True
+
+        col1.prop(unity_clip, 'root_node_start_location', text='')       
+        col2.prop(unity_clip, 'root_node_start_rotation', text='')
+        col3.operator(UNITY_OT_root_motion_rest.bl_idname, icon=cspy.icons.POSE_HLT).operation='start'
+        col3.operator(UNITY_OT_root_motion_cursor.bl_idname, icon=cspy.icons.CURSOR).operation='start'
+        col3a = col3.split()
+        col3a.alert = alert
+        col3a.operator(UNITY_OT_root_motion_reset.bl_idname, icon=cspy.icons.CANCEL).operation='start' 
+
+    def draw_root_motion_settings(self, layout, armature, unity_clip):        
+        col = layout.column()  
+        r0, r1, r2, r3 = col.row(), col.row(), col.row(), col.row()  
+        col.separator()      
+        r4 = col.row()
+
+        r0.label(text='Bake')
+        r0.label(text='Offset')
+        r0.label(text='Limit (min)')
+        r0.label(text='Limit (max)')
+
+        self.draw_root_xyz_component(r1, unity_clip, 'x')
+        self.draw_root_xyz_component(r2, unity_clip, 'y')
+        self.draw_root_xyz_component(r3, unity_clip, 'z')
+
+        r4.alert = unity_clip.root_motion_rot_offset != 0.0
+        r4.prop(unity_clip, 'root_motion_rot_bake_into',toggle=True,text='',icon=cspy.icons.ORIENTATION_GIMBAL)
+       
+        r4.prop(unity_clip, 'root_motion_rot_offset', text='Rot. Offset')  
+        r4.separator()
+        r4.operator(UNITY_OT_root_motion_reset.bl_idname, icon=cspy.icons.CANCEL).operation='settings'
+
+    def draw_bone_start_end(self, layout, armature, unity_clip, bone, phase):
+        p1 = '{0}_bone_offset_location_{1}'.format(bone, phase)
+        p2 = '{0}_bone_offset_rotation_{1}'.format(bone, phase)
+        operation = '{0}_{1}'.format(bone,phase)
+        phase = phase.capitalize()        
+        alert = False
+
+        def draw_value_row(p, text, alerting):
+            r = layout.row(align=True)
+            v = getattr(unity_clip, p)   
+            r.prop(unity_clip, p, text=text)   
+
+            alerting = alerting or max([1 if c != 0.0 else 0.0 for c in v])
+
+            return alerting
+
+        alert = draw_value_row(p1, 'Loc ({0})'.format(phase), alert)  
+        alert = draw_value_row(p2, 'Rot ({0})'.format(phase), alert)        
+
+        row = layout.row(align=True)
+
+        row.operator(UNITY_OT_root_motion_rest.bl_idname, icon=cspy.icons.POSE_HLT).operation = operation
+        row.operator(UNITY_OT_root_motion_cursor.bl_idname, icon=cspy.icons.CURSOR).operation = operation
+        r2 = row.split()
+        r2.alert = alert
+        r2.operator(UNITY_OT_root_motion_reset.bl_idname, icon=cspy.icons.CANCEL).operation = operation
+        
+    def draw_bone_offset(self, layout, armature, unity_clip, bone):       
+         
+        br = layout.row()
+
+        br.prop_search(armature, 
+            '{0}_bone_name'.format(bone), armature, 'bones', text=bone.capitalize(), icon=cspy.icons.BONE_DATA)
+        br.prop_search(armature, 
+            '{0}_bone_offset'.format(bone), bpy.data, 'objects', text='Offset', icon=cspy.icons.OBJECT_DATA)
+            
+        offr = layout.row()
+        c1 = offr.column()
+        c2 = offr.column()
+
+        self.draw_bone_start_end(c1, armature, unity_clip, bone, 'start')
+        self.draw_bone_start_end(c2, armature, unity_clip, bone, 'end')
+        
+    def draw_curve_buttons(self, layout, armature, unity_clip):
+        box = layout.box()
+        row = box.row(align=True)
+        row.operator(UNITY_OT_root_motion_settings_to_curves.bl_idname, icon=cspy.icons.CURVE_DATA)
+        row.operator(UNITY_OT_root_motion_settings_to_curves_all.bl_idname, icon=cspy.icons.CURVE_PATH)
+
+  
     def finish_draw(self, context, scene, layout, obj, action, unity_clip):
         obj = get_active_unity_object(context)
-        box = layout.box()
-        col = box.column(align=True)
+        armature = obj.data
+        self.draw_curve_buttons(layout, armature, unity_clip)
+       
+        self.draw_root_node_start(layout, armature, unity_clip)
+        
+        self.draw_root_motion_settings(layout, armature, unity_clip)
 
-        col.separator()
-        row = col.row(align=True)
-        row.prop(unity_clip, 'root_motion_rot_bake_into',text='Bake Rot.')
-        row.prop(unity_clip, 'root_motion_rot_offset', text='Rot. Offset')
-        row = col.row(align=True)
-        row.prop(unity_clip, 'root_motion_x_bake_into', text='Bake X')
-        row.prop(unity_clip, 'root_motion_x_offset', text='X Offset')
-        row = col.row(align=True)
-        row.prop(unity_clip, 'root_motion_y_bake_into', text='Bake Y')
-        row.prop(unity_clip, 'root_motion_y_offset', text='Y Offset')
-        row = col.row(align=True)
-        row.prop(unity_clip, 'root_motion_z_bake_into', text='Bake Z')
-        row.prop(unity_clip, 'root_motion_z_offset', text='Z Offset')
+        self.draw_bone_offset(layout.box(), armature, unity_clip, 'root')
+        self.draw_bone_offset(layout.box(), armature, unity_clip, 'hip')
 
-        row = col.row(align=True)
-        row.label(text="Root Offset")
-        row.prop(unity_clip, 'root_offset_x', text='')
-        row.prop(unity_clip, 'root_offset_y', text='')
-        row.prop(unity_clip, 'root_offset_z', text='')
-
-        col.separator()
-        row = col.row(align=True)
-        row.operator(UNITY_OT_root_motion_settings_to_curves.bl_idname)
-        row.operator(UNITY_OT_root_motion_settings_to_curves_all.bl_idname)
 
 class _PT_Unity_020_Clip_020_Frames(_CLIP_SUBPANEL_REQ):
     bl_icon =  UnitySettings.icon_frames
@@ -489,16 +621,16 @@ def register():
     bpy.types.Scene.unity_clip_filters = bpy.props.PointerProperty(name='Unity Clip Filters', type=Unity_UL_Filters)
 
 
+    bpy.types.Armature.original_root_node = bpy.props.PointerProperty(name='Original Root Node', type=bpy.types.Object)
+    bpy.types.Armature.root_bone_name = bpy.props.StringProperty(name='Root Bone Name')
+    bpy.types.Armature.root_bone_offset = bpy.props.PointerProperty(name='Root Bone Offset', type=bpy.types.Object)
+    bpy.types.Armature.hip_bone_name = bpy.props.StringProperty(name='Hip Bone Name')
+    bpy.types.Armature.hip_bone_offset = bpy.props.PointerProperty(name='Hip Bone Offset', type=bpy.types.Object)
+
     bpy.types.Action.unity_metadata = bpy.props.PointerProperty(name="Unity Metadata", type=UnityActionMetadata)
     bpy.types.Action.unity_clips = bpy.props.CollectionProperty(name="Unity Clips", type=UnityClipMetadata)
 
-    for key in UnityClipMetadata.root_motion_keys:
-        if key.endswith('bake_into'):
-            prop = bpy.props.IntProperty(name=key, min=0,max=1,default=1)
-        else:
-            prop = bpy.props.FloatProperty(name=key, default=0.0)
 
-        setattr(bpy.types.Object, key, prop)
 
 
 def unregister():
@@ -506,10 +638,12 @@ def unregister():
     del bpy.types.Scene.all_unity_clips
     del bpy.types.Scene.unity_clip_filters
 
+
+    del bpy.types.Armature.original_root_node
+    del bpy.types.Armature.root_bone_name
+    del bpy.types.Armature.root_bone_offset    
+    del bpy.types.Armature.hip_bone_name
+    del bpy.types.Armature.hip_bone_offset
+
     del bpy.types.Action.unity_metadata
     del bpy.types.Action.unity_clips
-
-    for key in UnityClipMetadata.root_motion_keys:
-        prop = getattr(bpy.types.Object, key, None)
-        if prop:
-            del prop

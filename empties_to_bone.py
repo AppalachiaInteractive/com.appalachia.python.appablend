@@ -2,7 +2,7 @@ import bpy
 import math
 from mathutils import Vector, Euler, Matrix
 import cspy
-from cspy import utils
+from cspy import utils, modes
 from cspy.bones import *
 
 
@@ -271,7 +271,7 @@ def sync_bone_positions(armature_old):
     edit_bone_dict = cspy.bones.get_edit_bone_data_dict(armature_old)
     print('edit bone data dict length: {0}'.format(len(edit_bone_dict.keys())))
 
-    cspy.utils.enter_mode(armature_new, cspy.bones.EDIT_MODE_SET)
+    entered, active, mode = MODES.enter_mode_if(modes.EDIT_MODE, armature_new)
 
     for bone in armature_new.data.edit_bones:
         bone_name = bone.name
@@ -291,7 +291,7 @@ def sync_bone_positions(armature_old):
         bone.roll = dict_values[2]
         bone.use_connect = dict_values[3]
 
-    cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
 def _create_norot_bones():
     print("Create NOROT bones chain...")

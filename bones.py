@@ -1,28 +1,17 @@
 import bpy
 import cspy
 import math, mathutils
+from cspy import utils, modes
+from cspy.modes import *
 
 from mathutils import Matrix, Vector
-
-EDIT_MODE_CHECK = 'EDIT_ARMATURE'
-EDIT_MODE_SET = 'EDIT'
-POSE_MODE_SET = 'POSE'
 
 def get_bone_data_path(bone_name, prop):
     path = 'pose.bones["{0}"].{1}'.format(bone_name, prop)
     return path
 
-def enter_edit_mode():
-    return bpy.context.mode != EDIT_MODE_CHECK
-
-def exit_edit_mode(entered):
-    return entered and bpy.context.mode == EDIT_MODE_CHECK
-
 def set_bone_parenting(obj, bone_name, parent_name, use_connect):
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     bone = edit_bones[bone_name]
@@ -31,9 +20,7 @@ def set_bone_parenting(obj, bone_name, parent_name, use_connect):
 
     bone.use_connect = use_connect
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
-
+    exit_mode_if(entered, active, mode)
 
 def is_bone_in_layer(obj, bone_name, index):
     if not bone_name in obj.data.bones:
@@ -42,20 +29,14 @@ def is_bone_in_layer(obj, bone_name, index):
     bone = obj.data.bones[bone_name]
     return bone.layers[index]
 
-
 def set_bone_layer(obj, bone_name, index, value):
     if not bone_name in obj.data.bones:
         return
 
     obj.data.bones[bone_name].layers[index] = value
 
-
 def remove_bones_startwith(obj, prefix):
-
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
 
@@ -68,16 +49,10 @@ def remove_bones_startwith(obj, prefix):
     for edit_bone in remove:
         edit_bones.remove(edit_bone)
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
-
+    exit_mode_if(entered, active, mode)
 
 def remove_bones(obj, bone_names):
-
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
 
@@ -87,25 +62,19 @@ def remove_bones(obj, bone_names):
         bone = edit_bones[bone_name]
         edit_bones.remove(bone)
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
 def remove_bone(obj, bone_name):
     if not bone_name in obj.data.bones:
-        return
+        return      
 
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     bone = edit_bones[bone_name]
     edit_bones.remove(bone)
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
-
+    exit_mode_if(entered, active, mode)
 
 def get_pose_bone(obj, bone_name):
     if bone_name in obj.data.bones:
@@ -123,27 +92,21 @@ def create_or_get_bone(obj, bone_name):
     if bone_name in obj.data.bones:
         return obj.data.bones[bone_name]
 
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)    
 
     edit_bones = obj.data.edit_bones
     ebone = edit_bones.new(bone_name)
     ebone.tail = Vector([0.0, 0.0, 1.0])
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
+
+    if 'EDIT' not in bpy.context.mode:
         return obj.data.bones[bone_name]
 
     return ebone
 
-
 def shift_bones(obj, matrix):
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
 
@@ -153,15 +116,10 @@ def shift_bones(obj, matrix):
 
         bone.tail = matrix @ bone.tail
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
-
+    exit_mode_if(entered, active, mode)
 
 def set_local_head_tail(obj, bone_name, head, tail):
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     bone = edit_bones[bone_name]
@@ -170,67 +128,163 @@ def set_local_head_tail(obj, bone_name, head, tail):
     bone.tail = tail
     bone.roll = 0
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
 def set_local_tail(obj, bone_name, tail):
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     bone = edit_bones[bone_name]
 
     bone.tail = tail
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
 def set_edit_bone_matrix_by_object(obj, bone_name, target_object, bone_length = 1.0):
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     set_edit_bone_matrix(obj, bone_name, target_object.matrix_local, bone_length)
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
-
+    exit_mode_if(entered, active, mode)
 
 def set_edit_bone_matrix(obj, bone_name, matrix, bone_length = 1.0):
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     bone = edit_bones[bone_name]
     bone.matrix = matrix
     bone.length = bone_length
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
+
+def get_pose_bone_rest_matrix_object(obj, bone_name):    
+    entered, active, mode = enter_mode_if(MODE_POSE, obj)   
+
+    bone = obj.data.bones[bone_name]
+    
+    bone_matrix_obj = bone.matrix_local
+
+    exit_mode_if(entered, active, mode)
+
+    return bone_matrix_obj.copy()
+
+def get_pose_bone_matrix_object(obj, bone_name):    
+    entered, active, mode = enter_mode_if(MODE_POSE, obj)
+
+    bone = obj.pose.bones[bone_name]
+    
+    bone_matrix_obj = bone.matrix
+
+    exit_mode_if(entered, active, mode)
+
+    return bone_matrix_obj.copy()
+
+def get_pose_bone_rest_matrix_world(obj, bone_name):    
+    entered, active, mode = enter_mode_if(MODE_POSE, obj)
+
+    bone = obj.data.bones[bone_name]
+    
+    obj_matrix_world = obj.matrix_world
+    bone_matrix_obj = bone.matrix_local
+
+    bone_world_matrix = bone_matrix_obj @ obj_matrix_world
+
+    exit_mode_if(entered, active, mode)
+
+    return bone_world_matrix
+
+def get_pose_bone_matrix_world(obj, bone_name):    
+    entered, active, mode = enter_mode_if(MODE_POSE, obj)
+
+    bone = obj.pose.bones[bone_name]
+    
+    obj_matrix_world = obj.matrix_world
+    bone_matrix_obj = bone.matrix
+
+    bone_world_matrix = bone_matrix_obj @ obj_matrix_world
+
+    exit_mode_if(entered, active, mode)
+
+    return bone_world_matrix
+
+def set_pose_bone_matrix_object(obj, bone_name, matrix):
+    entered, active, mode = enter_mode_if(MODE_POSE, obj)
+
+    bone = obj.pose.bones[bone_name]
+    bone.matrix = matrix.copy()
+
+    exit_mode_if(entered, active, mode)
+
+def set_pose_bone_matrix_world(obj, bone_name, matrix):
+    entered, active, mode = enter_mode_if(MODE_POSE, obj)
+
+    bone = obj.pose.bones[bone_name]
+    bone.matrix = obj.matrix_world.inverted() @ matrix
+
+    exit_mode_if(entered, active, mode)
+
+def reset_pose_bone_location(obj, bone_name):
+    entered, active, mode = enter_mode_if(MODE_POSE, obj)
+
+    bone = obj.pose.bones[bone_name]
+
+    rest_matrix = get_pose_bone_rest_matrix_object(obj, bone_name)
+    current_matrix = bone.matrix
+    
+    rl,_,_ = rest_matrix.decompose()
+    cl,cr,cs = current_matrix.decompose()
+
+    ml = Matrix.Translation(rl)
+    mr = cr.to_matrix().to_4x4()
+    msc = Matrix.Diagonal(cs).to_4x4()
+
+    ms = ml @ mr @ msc
+    
+    bone.matrix = ms
+
+    exit_mode_if(entered, active, mode)
+
+def reset_pose_bone_rotation(obj, bone_name):
+    entered, active, mode = enter_mode_if(MODE_POSE, obj)
+
+    bone = obj.pose.bones[bone_name]
+
+    rest_matrix = get_pose_bone_rest_matrix_object(obj, bone_name)
+    current_matrix = bone.matrix
+    
+    _,rr,_ = rest_matrix.decompose()
+    cl,cr,cs = current_matrix.decompose()
+
+    ml = Matrix.Translation(cl)
+    mr = rr.to_matrix().to_4x4()
+    msc = Matrix.Diagonal(cs).to_4x4()
+
+    ms = ml @ mr @ msc
+    
+    bone.matrix = ms
+
+    exit_mode_if(entered, active, mode)
+
+def reset_pose_bone_transform(obj, bone_name):
+    entered, active, mode = enter_mode_if(MODE_POSE, obj)
+
+    bone = obj.pose.bones[bone_name]
+
+    bone.matrix = get_pose_bone_rest_matrix_object(obj, bone_name)    
+
+    exit_mode_if(entered, active, mode)
 
 def set_edit_bone_matrix_world(obj, bone_name, matrix):
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     bone = edit_bones[bone_name]
-    bone.matrix = obj.matrix_world.inverted() @ matrix
+    bone.matrix = matrix @ obj.matrix_world.inverted()
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
 def set_world_tail(obj, bone_name, tail):
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     bone = edit_bones[bone_name]
@@ -238,14 +292,10 @@ def set_world_tail(obj, bone_name, tail):
 
     bone.tail = matrix.inverted() @ tail
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
 def set_world_head_tail(obj, bone_name, head, tail):
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     bone = edit_bones[bone_name]
@@ -255,15 +305,10 @@ def set_world_head_tail(obj, bone_name, head, tail):
     bone.tail = matrix.inverted() @ tail
     bone.roll = 0
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
 def set_world_head_tail_xaxis(obj, bone_name, head, tail, x_axis):
-
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     bone = edit_bones[bone_name]
@@ -273,16 +318,10 @@ def set_world_head_tail_xaxis(obj, bone_name, head, tail, x_axis):
     bone.tail = matrix.inverted() @ tail
     cspy.bones.align_bone_x_axis(bone, x_axis)
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
-
+    exit_mode_if(entered, active, mode)
 
 def get_world_head_tail(obj, bone_name):
-
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     bone = edit_bones[bone_name]
@@ -292,8 +331,7 @@ def get_world_head_tail(obj, bone_name):
     tail = matrix @ bone.tail
     x_axis = matrix @ bone.x_axis
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
     return matrix, head, tail, x_axis
 
@@ -316,12 +354,8 @@ def are_bones_same_values(obj, bone, obj2, bone2):
 
     return (h == h2 and t == t2 and x == x2 and y == y2 and z == z2)
 
-
 def get_edit_bone_data_dict(obj):
-    entered = False
-    if enter_edit_mode():
-        entered = True
-        active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     edit_bones = obj.data.edit_bones
     edit_bone_dict = {}
@@ -329,34 +363,32 @@ def get_edit_bone_data_dict(obj):
     for bone in edit_bones:
         edit_bone_dict[bone.name] = (bone.head.copy(), bone.tail.copy(), bone.roll, bone.use_connect)
 
-    if exit_edit_mode(entered):
-        cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
     return edit_bone_dict
 
 def get_edit_bone_matrices(obj):
-
-    active, mode = cspy.utils.enter_mode(obj, EDIT_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
     bone_matrices = {}
 
     for bone in obj.data.edit_bones:
         bone_matrices[bone.name] = bone.matrix.copy()
 
-    cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
     return bone_matrices
 
 def get_pose_bone_matrices(obj):
 
-    active, mode = cspy.utils.enter_mode(obj, POSE_MODE_SET)
+    entered, active, mode = enter_mode_if(MODE_POSE, obj)
 
     bone_matrices = {}
 
     for bone in obj.pose.bones:
         bone_matrices[bone.name] = bone.matrix.copy()
 
-    cspy.utils.exit_mode(active, mode)
+    exit_mode_if(entered, active, mode)
 
     return bone_matrices
 

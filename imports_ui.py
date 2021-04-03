@@ -4,6 +4,7 @@ from cspy.imports_ops import *
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.polling import POLL
 from cspy import subtypes
+from cspy.unity import *
 
 class IMPORT_PANEL:
     bl_label = "Import"

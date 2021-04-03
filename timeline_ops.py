@@ -4,6 +4,34 @@ from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.timeline import *
 
+class TIMELINE_OT_prev_frame(OPS_, Operator):
+    """Moves to previous frame"""
+    bl_idname = "timeline.prev_frame"
+    bl_label = "Prev Frame"
+    bl_icon = cspy.icons.PLAY_REVERSE
+
+    @classmethod
+    def do_poll(cls, context):
+        return context.scene.frame_current != context.scene.frame_start
+
+    def do_execute(self, context):
+        context.scene.frame_set(context.scene.frame_current-1)
+        return {'FINISHED'}
+
+class TIMELINE_OT_next_frame(OPS_, Operator):
+    """Moves to next frame"""
+    bl_idname = "timeline.next_frame"
+    bl_label = "Next Frame"
+    bl_icon = cspy.icons.PLAY
+
+    @classmethod
+    def do_poll(cls, context):
+        return context.scene.frame_current != context.scene.frame_end
+
+    def do_execute(self, context):
+        context.scene.frame_set(context.scene.frame_current+1)
+        return {'FINISHED'}
+
 class TIMELINE_OT_clamp_to_strip(OPS_, Operator):
     """Clamps scene play region to selected strips"""
     bl_idname = "timeline.clamp_to_strip"

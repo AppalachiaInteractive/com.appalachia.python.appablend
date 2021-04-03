@@ -137,12 +137,26 @@ def iter_my_classes(modules):
             if not getattr(cls, "is_registered", False):
                 yield cls
 
+    
+def sort_item(i):
+    order = getattr(i, 'bl_order', 0)
+    name = getattr(i, 'bl_idname', i.__name__)
+
+    val = '{0:06}_{1}'.format(order, name)
+    return val
+
+def sort_key(i):
+    item = i[0]
+    return sort_item(item)
+
 def get_classes_in_modules(modules):
     classes = set()
+
     for module in modules:
         for cls in iter_classes_in_module(module):
             classes.add(cls)
-    return classes
+        
+    return sorted(classes, key=sort_item)
 
 def iter_classes_in_module(module):
     for value in module.__dict__.values():
@@ -167,10 +181,8 @@ def toposort(deps_dict):
     sorted_values = set()
     while len(deps_dict) > 0:
         unsorted = []
-        def sort_item(i):
-            return i[0].__name__
 
-        items = sorted(deps_dict.items(), key=sort_item)
+        items = sorted(deps_dict.items(), key=sort_key)
 
         for value, deps in items:
             if len(deps) == 0:
