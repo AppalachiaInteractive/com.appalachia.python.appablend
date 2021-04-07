@@ -62,7 +62,7 @@ class VIEW_3D_PT_UI_Tool_Actions(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
     @classmethod
     def do_poll(cls, context):
         #return POLL.active_object_animation_data(context)
-        return True
+        return context.active_object
 
     def do_draw(self, context, scene, layout, obj):
         col = layout.column()
@@ -161,8 +161,10 @@ def register():
     bpy.types.Object.action_op_helper = bpy.props.PointerProperty(type=ActionOpHelper)
     bpy.types.Scene.bone_rename_old = bpy.props.StringProperty(name="Old Name")
     bpy.types.Scene.bone_rename_new = bpy.props.StringProperty(name="New Name")
+    bpy.types.Action.associated_armature = bpy.props.PointerProperty(name='Associated Armature', type=bpy.types.Armature)
 
 def unregister():
     del bpy.types.Object.action_op_helper
     del bpy.types.Scene.bone_rename_old
     del bpy.types.Scene.bone_rename_new
+    del bpy.types.Action.associated_armature

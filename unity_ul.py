@@ -82,18 +82,20 @@ class Unity_UL_Filters(bpy.types.PropertyGroup):
 
         excluded=False
 
-        if not item:
+        if not item or not item.action:
             excluded = True
 
-        excluded |= self.filter_items_by_name(self.filter_name, item, propname="name", reverse=self.use_name_invert)
-        excluded |= item.action.unity_metadata.clips_hidden
+        excluded = excluded or item is None
+        excluded = excluded or item.action is None
+        excluded = excluded or item.action.unity_metadata is None
+        excluded = excluded or item.action.unity_metadata.clips_hidden
+        excluded = excluded or self.filter_items_by_name(self.filter_name, item, propname="name", reverse=self.use_name_invert)
 
         scene_mode = context.scene.unity_settings.mode == 'SCENE'
 
-        if scene_mode and (item.action.name.lower() == 'master' or item.action.unity_metadata.master_action):
-            excluded = True
+        excluded = excluded or (scene_mode and (item.action.name.lower() == 'master' or item.action.unity_metadata.master_action))
 
-        if scene_mode and self.use_filter_clip_count:
+        if not excluded and (scene_mode and self.use_filter_clip_count):
             if self.clip_count_single and len(item.action.unity_clips) != 1:
                 excluded = True
             elif not self.clip_count_single and len(item.action.unity_clips) < 2:
@@ -272,6 +274,8 @@ class UNITY_UL_UnityClips(bpy.types.UIList):
 
     def draw_item(self, _context, layout, _data, item, icon, _active_data_, _active_propname, _index):
         try:
+            if not item or not item.action:
+                return
             if self.layout_type in {'DEFAULT', 'COMPACT'}:
                 draw_clip_row(_context, item.action, item, layout)
 

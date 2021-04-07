@@ -13,16 +13,12 @@ class GRAPH_EDITOR_PT_UI_Tool_Dependencies(bpy.types.Panel, PT_, UI.GRAPH_EDITOR
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_ARMATURE(context)
+        return True
 
     def do_draw(self, context, scene, layout, obj):
-
-        cspy.ui.layout_euler(layout, obj)
-
-        col = layout.column()
-        armature_mod = context.active_object.armature_mod
-        col.prop(armature_mod, 'root_motion_mute', toggle=True)
-        col.operator(AM_Integrate_Empties.bl_idname)
+        layout.operator(DRV_OT_update_dependencies.bl_idname)
+        
+        
 
 def register():
     pass

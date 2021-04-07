@@ -5,16 +5,26 @@ import cspy
 from cspy import utils, subtypes, icons
 
 def get_active_unity_object(context):
+    obj = None
     if context.scene.unity_settings.mode == 'SCENE':
-        return context.scene.unity_settings.target_armature
-    if context.scene.unity_settings.mode == 'TARGET':
-        return context.scene.unity_settings.target_armature
+        obj = context.scene.unity_settings.target_armature
+    elif context.scene.unity_settings.mode == 'TARGET':
+        obj = context.scene.unity_settings.target_armature
+    else:
+        obj = context.active_object
 
-    return context.active_object
+    if obj is None:
+        return None
+    if obj.animation_data is None:
+        obj.animation_data_create()
 
-def update_clip_index_scene(self, context):
+    return obj
+
+def apply_clip_by_index(context, clip_index):
+    if clip_index < 0:
+        return
     scene = context.scene
-    clip = scene.all_unity_clips[scene.unity_settings.clip_index]
+    clip = scene.all_unity_clips[clip_index]
     action = clip.action
 
     obj = get_active_unity_object(context)
@@ -25,6 +35,10 @@ def update_clip_index_scene(self, context):
 
     context.scene.frame_set(clip.frame_start)
 
+def update_clip_index_scene(self, context):
+    scene = context.scene
+    apply_clip_by_index(context, scene.unity_settings.clip_index)
+    
     bpy.ops.timeline.view_clip()
 
 _MODES = {
@@ -112,6 +126,10 @@ def get_unity_action_and_clip(context):
 
         action = None
         unity_clip = None
+
+        if not obj  or not obj.animation_data or not obj.animation_data.action:
+            return action, unity_clip
+
         if scene.unity_settings.mode == 'SCENE' and scene.all_unity_clips and len(scene.all_unity_clips) > 0:
             unity_clip = scene.all_unity_clips[scene.unity_settings.clip_index]
             action = unity_clip.action

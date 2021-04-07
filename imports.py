@@ -1,4 +1,6 @@
 import bpy
+import cspy
+from cspy import subtypes
 
 def import_gltf(
         filepath,
@@ -49,85 +51,50 @@ def import_fbx(
     my_edge_crease_scale=1):
 
     bpy.ops.better_import.fbx(
-    filepath=filepath,
-    filter_glob=filter_glob,
-    files=files,
-    use_auto_bone_orientation=use_auto_bone_orientation,
-    my_calculate_roll=my_calculate_roll,
-    my_bone_length=my_bone_length,
-    my_leaf_bone=my_leaf_bone,
-    use_fix_attributes=use_fix_attributes,
-    use_only_deform_bones=use_only_deform_bones,
-    use_vertex_animation=use_vertex_animation,
-    use_animation=use_animation,
-    use_triangulate=use_triangulate,
-    my_import_normal=my_import_normal,
-    use_auto_smooth=use_auto_smooth,
-    my_angle=my_angle,
-    my_shade_mode=my_shade_mode,
-    my_scale=my_scale,
-    use_optimize_for_blender=use_optimize_for_blender,
-    use_edge_crease=use_edge_crease,
-    my_edge_crease_scale=my_edge_crease_scale,
+        filepath=filepath,
+        filter_glob=filter_glob,
+        files=files,
+        use_auto_bone_orientation=use_auto_bone_orientation,
+        my_calculate_roll=my_calculate_roll,
+        my_bone_length=my_bone_length,
+        my_leaf_bone=my_leaf_bone,
+        use_fix_attributes=use_fix_attributes,
+        use_only_deform_bones=use_only_deform_bones,
+        use_vertex_animation=use_vertex_animation,
+        use_animation=use_animation,
+        use_triangulate=use_triangulate,
+        my_import_normal=my_import_normal,
+        use_auto_smooth=use_auto_smooth,
+        my_angle=my_angle,
+        my_shade_mode=my_shade_mode,
+        my_scale=my_scale,
+        use_optimize_for_blender=use_optimize_for_blender,
+        use_edge_crease=use_edge_crease,
+        my_edge_crease_scale=my_edge_crease_scale,
     )
 
-    return bpy.context.selected_objects
+    imported = bpy.context.selected_objects.copy()
+    return imported
 
-"""
-def import_fbx(
-    filepath='',
-    directory='',
-    filter_glob='*.fbx',
-    #files=None,
-    ui_tab='MAIN',
-    use_manual_orientation=False,
-    global_scale=1.0,
-    bake_space_transform=False,
-    use_custom_normals=True,
-    use_image_search=True,
-    use_alpha_decals=False,
-    decal_offset=0.0,
-    use_anim=True,
-    anim_offset=1.0,
-    use_subsurf=False,
-    use_custom_props=True,
-    use_custom_props_enum_as_string=True,
-    ignore_leaf_bones=False,
-    force_connect_children=False,
-    automatic_bone_orientation=False,
-    primary_bone_axis='Y',
-    secondary_bone_axis='X',
-    use_prepost_rot=True,
-    axis_forward='-Z',
-    axis_up='Y'
-    ):
+_MODES = {
+    'Adjust At Animation Start':'START',
+    'Adjust Every Frame':'EVERY',
+}
+MODE_ENUM = cspy.utils.create_enum_dict(_MODES)
+_MODE_ENUM_DEF = 'START'
 
-    bpy.ops.import_scene.fbx(
-        filepath=filepath,
-        directory=directory,
-        filter_glob=filter_glob,
-        #files=files,
-        ui_tab=ui_tab,
-        use_manual_orientation=use_manual_orientation,
-        global_scale=global_scale,
-        bake_space_transform=bake_space_transform,
-        use_custom_normals=use_custom_normals,
-        use_image_search=use_image_search,
-        use_alpha_decals=use_alpha_decals,
-        decal_offset=decal_offset,
-        use_anim=use_anim,
-        anim_offset=anim_offset,
-        use_subsurf=use_subsurf,
-        use_custom_props=use_custom_props,
-        use_custom_props_enum_as_string=use_custom_props_enum_as_string,
-        ignore_leaf_bones=ignore_leaf_bones,
-        force_connect_children=force_connect_children,
-        automatic_bone_orientation=automatic_bone_orientation,
-        primary_bone_axis=primary_bone_axis,
-        secondary_bone_axis=secondary_bone_axis,
-        use_prepost_rot=use_prepost_rot,
-        axis_forward=axis_forward,
-        axis_up=axis_up
-        )
+class ImportSettings(bpy.types.PropertyGroup):    
+    import_dir: bpy.props.StringProperty(name="Import Directory", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
+    
+    import_recursive: bpy.props.BoolProperty(name="Import Recursive")
 
-    return bpy.context.selected_objects """
+    maya_mode: bpy.props.EnumProperty(name='Mode', items=MODE_ENUM, default=_MODE_ENUM_DEF)
+    maya_template: bpy.props.StringProperty(name="Maya Armature File", subtype=subtypes.StringProperty.Subtypes.FILE_PATH)
+
+    maya_import_dir: bpy.props.StringProperty(name="Maya Import Directory", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)    
+    maya_import_recursive: bpy.props.BoolProperty(name="Maya Import Recursive")
+    
+    maya_rot_bone_name: bpy.props.StringProperty(name='Maya Rotation Bone')
+    maya_rot_value: bpy.props.FloatVectorProperty(name='Maya Rotation Value', subtype=subtypes.FloatVectorProperty.Subtypes.EULER)
+    maya_export_dir: bpy.props.StringProperty(name="Maya Export Directory", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
+    

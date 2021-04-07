@@ -4,6 +4,7 @@ from cspy.ops import OPS_, OPS_DIALOG
 from cspy.polling import POLL
 from cspy.nla import *
 from cspy.unity_clips import *
+from cspy.root_motion import *
 
 class NLA_OT_actions_to_strip(OPS_, Operator):
     """Creates NLA strips for each action."""
@@ -93,7 +94,7 @@ class NLA_OT_strips_from_text(OPS_, Operator):
         start, first = add_bind_pose_for_strip_population(context, track, padding)
 
         for action in bpy.data.actions:
-            for data_path in UnityClipMetadata.root_motion_keys:
+            for data_path in RootMotionMetadata.root_motion_keys:
                 fcurve = action.fcurves.find(data_path, index=-1)
                 if fcurve:
                     action.fcurves.remove(fcurve)
@@ -121,7 +122,7 @@ class NLA_OT_strips_from_text(OPS_, Operator):
             start = strip.frame_end + padding
 
             obj.animation_data.action = action
-            for data_path in UnityClipMetadata.root_motion_keys:
+            for data_path in RootMotionMetadata.root_motion_keys:
 
                 fcurve = action.fcurves.find(data_path, index=-1)
                 if not fcurve:

@@ -3,6 +3,7 @@ import math
 from mathutils import Vector, Euler, Matrix
 import cspy
 from cspy import utils
+from cspy.root_motion import *
 
 def sync_with_action_mode(context):
     for clip in context.scene.all_unity_clips:
@@ -46,6 +47,9 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
     source_frame_start: bpy.props.IntProperty(name='Source Frame Start')
     source_frame_end: bpy.props.IntProperty(name='Source Frame End')
     source_frame_shift: bpy.props.IntProperty(name='Source Frame Shift')
+
+    root_motion: bpy.props.PointerProperty(name='Root Motion', type = RootMotionMetadata)
+
     pose_start: bpy.props.StringProperty(name='Pose Start')
     pose_end: bpy.props.StringProperty(name='Pose End')
     pose_start_rooted: bpy.props.BoolProperty(name='Pose Start Rooted')
@@ -89,41 +93,9 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
     hip_bone_offset_location_end: bpy.props.FloatVectorProperty(name='Hip Bone Offset Location End', subtype=cspy.subtypes.FloatVectorProperty.Subtypes.TRANSLATION, size=3)
     hip_bone_offset_rotation_end: bpy.props.FloatVectorProperty(name='Hip Bone Offset Rotation End', subtype=cspy.subtypes.FloatVectorProperty.Subtypes.EULER, size=3,default=[0,0,0])
 
-    root_motion_keys = [
-        'root_node_start_location',
-        'root_node_start_rotation',
-        'root_motion_rot_bake_into',
-        'root_motion_x_bake_into',
-        'root_motion_y_bake_into',
-        'root_motion_z_bake_into',
-        'root_motion_rot_offset',
-        'root_motion_x_offset',
-        'root_motion_y_offset',
-        'root_motion_z_offset',
-
-        'root_bone_offset_location_start',
-        'root_bone_offset_rotation_start',
-        'root_bone_offset_location_end',
-        'root_bone_offset_rotation_end',
-        'hip_bone_offset_location_start',
-        'hip_bone_offset_rotation_start',
-        'hip_bone_offset_location_end',
-        'hip_bone_offset_rotation_end',
-
-        'root_motion_x_limit_neg',
-        'root_motion_x_limit_neg_val',
-        'root_motion_x_limit_pos',
-        'root_motion_x_limit_pos_val',
-        'root_motion_y_limit_neg',
-        'root_motion_y_limit_neg_val',
-        'root_motion_y_limit_pos',
-        'root_motion_y_limit_pos_val',
-        'root_motion_z_limit_neg',
-        'root_motion_z_limit_neg_val',
-        'root_motion_z_limit_pos',
-        'root_motion_z_limit_pos_val',
-    ]
-
+    def update_root_motion_settings(self):
+        self.root_motion.copy_from_clip(self)
+        
     def copy_from(self, other):
         cspy.utils.copy_from_to(other, self)
 
@@ -144,7 +116,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
         return obj_name,clip_name,frame_start,frame_end,loop_time,rot_bake_into,rot_offset,y_bake_into ,y_offset,xz_bake_into
 
     @classmethod
-    def process_clip_row(cls, row, key_offset, action):
+    def process_clip_row(cls, row, key_offset, action, new_clips, existing_clips, discarded_clips):
         obj_name,clip_name,frame_start,frame_end,loop_time,rot_bake_into,rot_offset,y_bake_into ,y_offset,xz_bake_into = UnityClipMetadata.parse_clip_row(row, key_offset)
 
         potential_action_names = [obj_name, clip_name, '{0}_{1}'.format(obj_name, clip_name)]
@@ -159,6 +131,7 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
                     found = True
 
             if not found:
+                discarded_clips.append('{0}: {1}'.format(obj_name, clip_name))
                 return None
 
             metadata = action.unity_clips.get(clip_name)
@@ -173,10 +146,12 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
 
             matching_metadatas.append(metadata)
         else:
+            processed = False
             for potential_name in potential_action_names:
-                if not potential_name in bpy.data.actions:
+                if processed or not potential_name in bpy.data.actions:
                     continue
-
+                
+                processed = True
                 action = bpy.data.actions[potential_name]
 
                 metadata = action.unity_clips.get(clip_name)
@@ -190,11 +165,15 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
                     metadata = action.unity_clips.add()
 
                 matching_metadatas.append(metadata)
+        
+        if len(matching_metadatas) == 0:            
+            discarded_clips.append('{0}: {1}'.format(obj_name, clip_name))
+            return matching_metadatas
 
         for metadata in matching_metadatas:
 
             if not existing:
-                print("New clip: {0}".format(clip_name))
+                new_clips.append('{0}: {1}'.format(obj_name, clip_name))
                 metadata.action = action
                 metadata.fbx_name = obj_name
                 metadata.name = clip_name
@@ -205,6 +184,8 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
                 metadata.root_motion_x_offset = 0
                 metadata.root_motion_y_offset = 0
                 metadata.root_motion_x_bake_into = xz_bake_into
+            else:
+                existing_clips.append('{0}: {1}'.format(obj_name, clip_name))
             
             metadata.loop_time = loop_time
             metadata.root_motion_rot_bake_into = rot_bake_into
@@ -226,12 +207,17 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
         if action and clear_clips:
             action.unity_clips.clear()
 
+        new_clips, existing_clips, discarded_clips = [], [], []
+
         for row in rows:
-            metadatas = UnityClipMetadata.process_clip_row(row, key_offset, action)
+            metadatas = UnityClipMetadata.process_clip_row(row, key_offset, action, new_clips, existing_clips, discarded_clips)
 
             if metadatas:
                 metadatas.extend(metadatas)
 
+        print('      NEW CLIPS: {0}'.format(new_clips))
+        print(' EXISTING CLIPS: {0}'.format(existing_clips))
+        print('DISCARDED CLIPS: {0}'.format(discarded_clips))
         return metadatas
 
     def decorate(self, action):

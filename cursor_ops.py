@@ -5,6 +5,7 @@ from cspy.polling import POLL
 from cspy.actions import *
 import math, mathutils
 from mathutils import Matrix, Vector, Euler, Quaternion
+from cspy.cursor import *
 
 class CURSOR_OT_Set:
     bl_icon = cspy.icons.CANCEL
@@ -17,10 +18,7 @@ class CURSOR_OT_Set:
         cursor = context.scene.cursor
         matrix = self.exec(context, cursor)
 
-        l,r,s = matrix.decompose()
-
-        cursor.location = l
-        cursor.rotation_quaternion = r
+        set_cursor_from_matrix(context, matrix)
 
         return {'FINISHED'}
 
@@ -31,7 +29,7 @@ class CURSOR_OT_set_world(CURSOR_OT_Set, OPS_, Operator):
     bl_icon = cspy.icons.WORLD
     
     def exec(self, context, cursor):
-        return Matrix(4)
+        return Matrix.Identity(4)
 
 class CURSOR_OT_set_active(CURSOR_OT_Set, OPS_, Operator):
     """Sets the cursor to the selected object's matrix"""

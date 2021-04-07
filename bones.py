@@ -10,10 +10,16 @@ def get_bone_data_path(bone_name, prop):
     path = 'pose.bones["{0}"].{1}'.format(bone_name, prop)
     return path
 
+def get_edit_bones(obj):
+    if hasattr(obj, 'data'):
+        return obj.data.edit_bones
+    else:
+        return obj.edit_bones
+
 def set_bone_parenting(obj, bone_name, parent_name, use_connect):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
-
-    edit_bones = obj.data.edit_bones
+    
+    edit_bones = get_edit_bones(obj)
     bone = edit_bones[bone_name]
     if parent_name in edit_bones:
         bone.parent = edit_bones[parent_name]
@@ -38,7 +44,7 @@ def set_bone_layer(obj, bone_name, index, value):
 def remove_bones_startwith(obj, prefix):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
 
     removing = []
 
@@ -54,7 +60,7 @@ def remove_bones_startwith(obj, prefix):
 def remove_bones(obj, bone_names):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
 
     for bone_name in bone_names:
         if not bone_name in edit_bones:
@@ -70,7 +76,7 @@ def remove_bone(obj, bone_name):
 
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     bone = edit_bones[bone_name]
     edit_bones.remove(bone)
 
@@ -94,7 +100,7 @@ def create_or_get_bone(obj, bone_name):
 
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)    
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     ebone = edit_bones.new(bone_name)
     ebone.tail = Vector([0.0, 0.0, 1.0])
 
@@ -108,7 +114,7 @@ def create_or_get_bone(obj, bone_name):
 def shift_bones(obj, matrix):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
 
     for bone in edit_bones:
         if not bone.use_connect:
@@ -118,22 +124,35 @@ def shift_bones(obj, matrix):
 
     exit_mode_if(entered, active, mode)
 
-def set_local_head_tail(obj, bone_name, head, tail):
+def set_local_head_tail(obj, bone_name, head, tail, roll=0):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     bone = edit_bones[bone_name]
 
     bone.head = head
     bone.tail = tail
-    bone.roll = 0
+    bone.roll = roll
+
+    exit_mode_if(entered, active, mode)
+    
+def copy_local_head_tail(obj, bone_name, copy_bone_name):
+    entered, active, mode = enter_mode_if(MODE_EDIT, obj)
+
+    edit_bones = get_edit_bones(obj)
+    bone = edit_bones[bone_name]
+    copy_bone = edit_bones[copy_bone_name]
+
+    bone.head = copy_bone.head
+    bone.tail = copy_bone.tail
+    bone.roll = copy_bone.roll
 
     exit_mode_if(entered, active, mode)
 
 def set_local_tail(obj, bone_name, tail):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     bone = edit_bones[bone_name]
 
     bone.tail = tail
@@ -150,7 +169,7 @@ def set_edit_bone_matrix_by_object(obj, bone_name, target_object, bone_length = 
 def set_edit_bone_matrix(obj, bone_name, matrix, bone_length = 1.0):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     bone = edit_bones[bone_name]
     bone.matrix = matrix
     bone.length = bone_length
@@ -277,7 +296,7 @@ def reset_pose_bone_transform(obj, bone_name):
 def set_edit_bone_matrix_world(obj, bone_name, matrix):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     bone = edit_bones[bone_name]
     bone.matrix = matrix @ obj.matrix_world.inverted()
 
@@ -286,7 +305,7 @@ def set_edit_bone_matrix_world(obj, bone_name, matrix):
 def set_world_tail(obj, bone_name, tail):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     bone = edit_bones[bone_name]
     matrix = obj.matrix_world
 
@@ -297,7 +316,7 @@ def set_world_tail(obj, bone_name, tail):
 def set_world_head_tail(obj, bone_name, head, tail):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     bone = edit_bones[bone_name]
     matrix = obj.matrix_world
 
@@ -310,7 +329,7 @@ def set_world_head_tail(obj, bone_name, head, tail):
 def set_world_head_tail_xaxis(obj, bone_name, head, tail, x_axis):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     bone = edit_bones[bone_name]
     matrix = obj.matrix_world
 
@@ -323,7 +342,7 @@ def set_world_head_tail_xaxis(obj, bone_name, head, tail, x_axis):
 def get_world_head_tail(obj, bone_name):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     bone = edit_bones[bone_name]
 
     matrix = obj.matrix_world
@@ -357,7 +376,7 @@ def are_bones_same_values(obj, bone, obj2, bone2):
 def get_edit_bone_data_dict(obj):
     entered, active, mode = enter_mode_if(MODE_EDIT, obj)
 
-    edit_bones = obj.data.edit_bones
+    edit_bones = get_edit_bones(obj)
     edit_bone_dict = {}
 
     for bone in edit_bones:

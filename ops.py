@@ -55,7 +55,8 @@ class OPS_(Operator):
                 return False
             return result
         except Exception as inst:
-            utils.print_exception(inst, 'do_poll')
+            utils.print_exception('do_poll')
+            time.sleep(1)
             return False
 
     @classmethod
@@ -88,6 +89,7 @@ class OPS_(Operator):
                 returning = self.finished()
         except Exception:
             utils.print_exception('do_execute')
+            time.sleep(1)
             returning = self.cancelled()
         finally:
             context.preferences.edit.use_global_undo = use_global_undo

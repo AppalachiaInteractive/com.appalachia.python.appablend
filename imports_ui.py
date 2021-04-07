@@ -4,7 +4,6 @@ from cspy.imports_ops import *
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.polling import POLL
 from cspy import subtypes
-from cspy.unity import *
 
 class IMPORT_PANEL:
     bl_label = "Import"
@@ -15,21 +14,26 @@ class IMPORT_PANEL:
         return True
 
     def do_draw(self, context, scene, layout, obj):
-        obj = get_active_unity_object(context)
-        unity_settings = scene.unity_settings
+        settings = context.scene.import_settings
 
-        col = layout.column(align=True)
-        row = col.row(align=True)
+        row = layout.row()
+        row.prop(settings, 'import_dir')
+        row.prop(settings, 'import_recursive', text='', icon=cspy.icons.FILE_REFRESH, toggle=True)
 
-        row.prop(unity_settings, 'mode')
+        layout.operator(IMPORTS_OT_import_directory.bl_idname)
 
-        row.prop(unity_settings, 'draw_sheets', toggle=True, text='', icon=unity_settings.icon_sheets)
-        row.prop(unity_settings, 'draw_keyframes', toggle=True, text='', icon=unity_settings.icon_keys)
-        row.prop(unity_settings, 'draw_clips', toggle=True, text='', icon=unity_settings.icon_clips)
+        layout.row().prop(settings, 'maya_mode')
+        
+        row = layout.row()
+        row.prop(settings, 'maya_template')
+        row.prop(settings, 'maya_import_dir')
+        row.prop(settings, 'maya_import_recursive', text='', icon=cspy.icons.FILE_REFRESH, toggle=True)
 
-        if unity_settings.mode != 'ACTIVE':
-            row = col.row(align=True)
-            row.prop(unity_settings, 'target_armature')
+        layout.row().prop(settings, 'maya_rot_bone_name')        
+        layout.row().prop(settings, 'maya_rot_value')
+
+        layout.prop(settings, 'maya_export_dir')
+        layout.operator(IMPORTS_OT_generate_maya_import_export_commands.bl_idname)
 
 
 class VIEW_3D_PT_UI_Tool_Import(IMPORT_PANEL, PT_, UI.VIEW_3D.UI.Tool, bpy.types.Panel):
@@ -40,7 +44,8 @@ class VIEW_3D_PT_UI_Tool_Import(IMPORT_PANEL, PT_, UI.VIEW_3D.UI.Tool, bpy.types
         return True
 
 def register():
-    bpy.types.Scene.import_dir = bpy.props.StringProperty(name="Import Directory", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
+    bpy.types.Scene.import_settings = bpy.props.PointerProperty(name="Import Settings", type=ImportSettings)
+
 
 def unregister():
-    del bpy.types.Scene.import_dir
+    del bpy.types.Scene.import_settings

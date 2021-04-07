@@ -1,6 +1,7 @@
 import bpy
 import os
 from os import path, walk
+from pathlib import Path
 
 def base_name(path):
     return bpy.path.basename(path)
@@ -20,17 +21,18 @@ def fileext(path):
     return file_extension
 
 def abspath(relpath):
-    return bpy.path.abspath(relpath)
+    return os.path.abspath(bpy.path.abspath(relpath))
 
 def read_file_lines(path):
     with open(path) as f:
         lines = f.readlines()
     return lines
 
-def get_files_in_dir(dir, prefix='', contains='', endswith='', case_sensitive=True):
+def get_files_in_dir(dir, prefix='', contains='', endswith='', case_sensitive=True, recursive=True):
     #print('Searching for files in [{0}] with prefix [{1}]'.format(dir, prefix))
 
     files = []
+
     for (dirpath, dirnames, filenames) in walk(dir):
         for filename in filenames:
             if prefix == '' or ((case_sensitive and filename.startswith(prefix)) or (not case_sensitive and filename.lower().startswith(prefix.lower()))):
@@ -41,6 +43,8 @@ def get_files_in_dir(dir, prefix='', contains='', endswith='', case_sensitive=Tr
                         fullname = fullname.replace('\\\\', '\\')
                         #print(fullname)
                         files.append(fullname)
+        if not recursive:
+            break
 
     return files
 

@@ -10,7 +10,7 @@ ADDITIVE_BLEND = 2
 class LineRenderer:
     def __init__(self):
         # Useful for rendering in the same space of an object
-        self.matrix = Matrix().Identity(4)
+        self.matrix = Matrix.Identity(4)
         # X-ray mode, draw through solid objects
         self.draw_on_top = False
         # Blend mode to choose, set it to one of the blend constants.

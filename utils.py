@@ -23,6 +23,25 @@ def print_exception(note):
     print(traceback_template % traceback_details) 
     print()
 
+def get_collections():
+    
+    import collections
+
+    colls = dir(bpy.data)
+    for coll in colls:
+        if callable(coll):
+            continue
+        if coll.startswith('_') or coll.startswith('is_') or coll.startswith('bl_'):
+            continue
+        
+        collection_eval_string = 'bpy.data.{0}'.format(coll)    
+        collection = eval(collection_eval_string)
+
+        if not hasattr(collection, '__iter__'):
+            continue
+        
+        yield collection
+
 def copy_from_to(f, t):
     try:
         from_props = set(dir(f))
@@ -166,3 +185,33 @@ def dump(obj, text):
     for attr in dir(obj):
         if hasattr( obj, attr ):
             print( "obj.%s = %s" % (attr, getattr(obj, attr)))
+
+def get_rotation_value(matrix, mode):  
+    _,r,_ = matrix.decompose()
+    
+    if mode == 'QUATERNION':
+        prop  = 'rotation_quaternion'
+        value = r
+    elif mode == 'AXIS_ANGLE':
+        prop  = 'rotation_axis_angle'
+        r.to_axis_angle()
+    elif mode == 'XYZ':
+        prop  = 'rotation_euler'
+        value = r.to_euler('XYZ')
+    elif mode == 'XZY':
+        prop  = 'rotation_euler'
+        value = r.to_euler('XZY')
+    elif mode == 'YXZ':
+        prop  = 'rotation_euler'
+        value = r.to_euler('YXZ')
+    elif mode == 'YZX':
+        prop  = 'rotation_euler'
+        value = r.to_euler('YZX')
+    elif mode == 'ZXY':
+        prop  = 'rotation_euler'
+        value = r.to_euler('ZXY')
+    elif mode == 'ZYX':
+        prop  = 'rotation_euler'
+        value = r.to_euler('ZYX')
+
+    return prop, value
