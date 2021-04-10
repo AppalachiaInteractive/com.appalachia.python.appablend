@@ -43,8 +43,9 @@ class OPS_OPTIONS:
 
 class OPS_(Operator):
     bl_options = OPS_OPTIONS.UNDO_REGISTER
-    bl_label = 'Label'
+    bl_label = 'Undefined'
     bl_idname = 'ops.base_op'
+    bl_icon = cspy.icons.CANCEL
 
     @classmethod
     def poll(cls, context):

@@ -1,7 +1,7 @@
 import bpy, cspy
 from bpy.types import Operator
 from cspy.ops import OPS_, OPS_DIALOG
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.timeline import *
 
 class TIMELINE_OT_prev_frame(OPS_, Operator):
@@ -79,7 +79,7 @@ class TIMELINE_OP_SCENE:
 class TIMELINE_OP:
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_action(context)
+        return DOIF.ACTIVE.HAS.ACTION(context)
 
 class TIMELINE_OT_clamp_to_action(TIMELINE_OP, OPS_, Operator):
     """Clamps scene play region to selected action"""
@@ -324,7 +324,7 @@ class TIMELINE_OT_select_keys(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_action(context)
+        return DOIF.ACTIVE.HAS.ACTION(context)
 
     def do_execute(self, context):
         obj = context.active_object
@@ -357,7 +357,7 @@ class TIMELINE_OT_clear():
     @classmethod
     def do_poll(cls, context):        
         s = context.scene
-        return POLL.active_object_action(context) and s.frame_current >= s.frame_start and s.frame_current <= s.frame_end
+        return DOIF.ACTIVE.HAS.ACTION(context) and s.frame_current >= s.frame_start and s.frame_current <= s.frame_end
 
     def next(self, context):
         context.scene.frame_set(context.scene.frame_current+1)

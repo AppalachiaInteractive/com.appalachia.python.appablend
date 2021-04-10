@@ -2,7 +2,7 @@
 import bpy
 import cspy
 from cspy.ui import PT_OPTIONS, PT_, UI
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.timeline import *
 from cspy.timeline_ops import *
 

@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import Menu, UIList
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.animation_retargeting import *
 from cspy.animation_retargeting_ops import *
@@ -137,7 +137,7 @@ class OBJECT_PT_ObjectPanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.DATA):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_ARMATURE_AND_BONES(context)
+        return DOIF.ACTIVE.HAS.BONES(context)
 
     def do_draw(self, context, scene, layout, obj):
 
@@ -218,7 +218,7 @@ class BONE_PT_PoseBonePanel(bpy.types.Panel, PT_, UI.PROPERTIES.WINDOW.BONE):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_ARMATURE_AND_BONES_AND_ANIMRET_SOURCE(context)
+        return DOIF.ACTIVE.HAS.BONES(context) and DOIF.ACTIVE.HAS.ANIM_RET(context)        
 
     def do_draw(self, context, scene, layout, obj):
         layout.use_property_decorate = True

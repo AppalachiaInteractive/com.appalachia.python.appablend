@@ -1,7 +1,7 @@
 import bpy
 import cspy
 from cspy.ui import PT_OPTIONS, PT_, UI
-from cspy.polling import POLL
+from cspy.polling import DOIF
 
 class VIEW_3D_PT_Object_DisplayType(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
     bl_label = "Object"
@@ -9,7 +9,7 @@ class VIEW_3D_PT_Object_DisplayType(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_MESH(context)
+        return DOIF.ACTIVE.TYPE.IS_MESH(context)
 
     def do_draw(self, context, scene, layout, obj):
         self.layout.prop(context.active_object, 'display_type')

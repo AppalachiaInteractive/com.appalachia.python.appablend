@@ -4,21 +4,39 @@ from mathutils import Vector, Euler, Matrix
 import cspy
 from cspy import utils
 from cspy.root_motion import *
+from cspy.unity import *
+
+def get_action_mode_clip(context, scene_clip):
+    action_clip = scene_clip.action.unity_clips[scene_clip.name]
+    return action_clip
+
+def get_scene_mode_clip(context, action_clip):
+    scene_clip = context.scene.all_unity_clips[action_clip.name]
+    return scene_clip
 
 def sync_with_action_mode(context):
-    for clip in context.scene.all_unity_clips:
-        real_clip = clip.action.unity_clips[clip.name]
-
-        clip.copy_from(real_clip)
+    for scene_clip in context.scene.all_unity_clips:
+        action_clip = get_action_mode_clip(context, scene_clip)
+        scene_clip.copy_from(action_clip)
 
 def sync_with_scene_mode(context):
-    for clip in context.scene.all_unity_clips:
-        real_clip = clip.action.unity_clips[clip.name]
+    for scene_clip in context.scene.all_unity_clips:
+        action_clip = get_action_mode_clip(context, scene_clip)
+        action_clip.copy_from(scene_clip)
 
-        real_clip.copy_from(clip)
+def sync_with_action_mode_clip(context, scene_clip):
+    action_clip = get_action_mode_clip(context, scene_clip)
+    scene_clip.copy_from(action_clip)
+
+def sync_with_scene_mode_clip(context, action_clip):
+    scene_clip = get_scene_mode_clip(context, action_clip)
+    action_clip.copy_from(scene_clip)
+
+def sync_with_clip(context, sync_from, sync_to):
+    sync_to.copy_from(sync_from)
 
 def update_clip_index(self, context):
-    action = context.active_object.animation_data.action
+    action, clip, clip_index = get_unity_action_and_clip(context)
     if self.id_data != action:
         return
     clip = action.unity_clips[action.unity_metadata.clip_index]
@@ -32,7 +50,7 @@ class UnityActionMetadata(bpy.types.PropertyGroup):
     clips_protected: bpy.props.BoolProperty(name='Clip Data Protected')
     clips_hidden: bpy.props.BoolProperty(name='Clips Hidden')
     master_action: bpy.props.BoolProperty(name='Master Action')
-    unity_clip_template: bpy.props.PointerProperty(name="Unity Clip Template", type=bpy.types.Action)
+    clip_template: bpy.props.PointerProperty(name="Unity Clip Template", type=bpy.types.Action)
     clip_index: bpy.props.IntProperty(name='Unity Index', default =-1, min=-1, update=update_clip_index)
     split_from: bpy.props.PointerProperty(name='Action', type=bpy.types.Action)
 
@@ -181,18 +199,21 @@ class UnityClipMetadata(bpy.types.PropertyGroup):
                 metadata.frame_end = frame_end
                 metadata.pose_start = 'Default'
                 metadata.pose_end = 'Default'
-                metadata.root_motion_x_offset = 0
-                metadata.root_motion_y_offset = 0
-                metadata.root_motion_x_bake_into = xz_bake_into
+                metadata.root_motion.root_motion_x_offset = 0
+                metadata.root_motion.root_motion_y_offset = 0
+                metadata.root_motion.root_motion_x_bake_into = xz_bake_into
             else:
                 existing_clips.append('{0}: {1}'.format(obj_name, clip_name))
             
-            metadata.loop_time = loop_time
-            metadata.root_motion_rot_bake_into = rot_bake_into
-            metadata.root_motion_y_bake_into = xz_bake_into
-            metadata.root_motion_z_bake_into = y_bake_into
-            metadata.root_motion_rot_offset = rot_offset
-            metadata.root_motion_z_offset = y_offset
+            
+            metadata.root_motion.loop_time = loop_time
+            metadata.root_motion.root_motion_rot_bake_into = rot_bake_into
+            if xz_bake_into:
+                metadata.root_motion.root_motion_x_bake_into = xz_bake_into
+            metadata.root_motion.root_motion_y_bake_into = xz_bake_into
+            metadata.root_motion.root_motion_z_bake_into = y_bake_into
+            metadata.root_motion.root_motion_rot_offset = rot_offset
+            metadata.root_motion.root_motion_z_offset = y_offset
 
         return matching_metadatas
 

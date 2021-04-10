@@ -2,7 +2,7 @@
 import bpy
 import cspy
 from cspy.ops import OPS_, OPS_DIALOG
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.actions import *
 from cspy.actions_ops import *
@@ -61,8 +61,7 @@ class VIEW_3D_PT_UI_Tool_Actions(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
 
     @classmethod
     def do_poll(cls, context):
-        #return POLL.active_object_animation_data(context)
-        return context.active_object
+        return DOIF.ACTIVE.OBJECT(context)
 
     def do_draw(self, context, scene, layout, obj):
         col = layout.column()

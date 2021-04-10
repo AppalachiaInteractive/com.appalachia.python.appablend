@@ -4,7 +4,7 @@ from mathutils import Vector, Euler, Matrix
 import cspy
 from cspy import utils, subtypes, icons
 
-def get_active_unity_object(context):
+def get_unity_target(context):
     obj = None
     if context.scene.unity_settings.mode == 'SCENE':
         obj = context.scene.unity_settings.target_armature
@@ -27,7 +27,9 @@ def apply_clip_by_index(context, clip_index):
     clip = scene.all_unity_clips[clip_index]
     action = clip.action
 
-    obj = get_active_unity_object(context)
+    scene.unity_settings.active_action = action
+
+    obj = get_unity_target(context)
 
     obj.animation_data.action = action
     context.scene.frame_start = clip.frame_start
@@ -40,45 +42,6 @@ def update_clip_index_scene(self, context):
     apply_clip_by_index(context, scene.unity_settings.clip_index)
     
     bpy.ops.timeline.view_clip()
-
-_MODES = {
-    'Active Mode':'ACTIVE',
-    'Target Mode':'TARGET',
-    'Scene Mode':'SCENE',
-}
-_MODE_ENUM =             cspy.utils.create_enum_dict(_MODES)
-_MODE_ENUM_DEF           = 'ACTIVE'
-
-class UnitySettings(bpy.types.PropertyGroup):
-    mode: bpy.props.EnumProperty(name='Mode', items=_MODE_ENUM, default=_MODE_ENUM_DEF)
-
-    sheet_dir_path: bpy.props.StringProperty(name="Sheet Dir Path", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
-    key_dir_path: bpy.props.StringProperty(name="Key Dir Path", subtype=subtypes.StringProperty.Subtypes.DIR_PATH)
-
-    clip_index: bpy.props.IntProperty(name='Unity Index', default =-1, min=-1, update=update_clip_index_scene)
-    target_armature: bpy.props.PointerProperty(name='Target Armature', type=bpy.types.Object)
-
-    draw_sheets: bpy.props.BoolProperty(name='Draw Sheets')
-    draw_keyframes: bpy.props.BoolProperty(name='Draw Keyframes')
-    draw_clips: bpy.props.BoolProperty(name='Draw Clips')
-    draw_metadata: bpy.props.BoolProperty(name='Draw Clip Metadata')
-    draw_root_motion: bpy.props.BoolProperty(name='Draw Root Motion')
-    draw_frames: bpy.props.BoolProperty(name='Draw Frames')
-    draw_pose: bpy.props.BoolProperty(name='Draw Pose')
-    draw_operations: bpy.props.BoolProperty(name='Draw Delete')
-
-    icon_unity = cspy.icons.FILE_3D
-    icon_sheets = cspy.icons.FILE
-    icon_keys = cspy.icons.DECORATE_KEYFRAME
-    icon_all_clips = cspy.icons.SEQ_SEQUENCER
-    icon_clips = cspy.icons.SEQ_STRIP_DUPLICATE
-    icon_clip = cspy.icons.SEQUENCE
-    icon_metadata = cspy.icons.MESH_DATA
-    icon_root_motion = cspy.icons.CON_FOLLOWPATH
-    icon_frames = cspy.icons.CAMERA_DATA
-    icon_pose = cspy.icons.ARMATURE_DATA
-    icon_operations = cspy.icons.GHOST_DISABLED
-    icon_operation = cspy.icons.GHOST_ENABLED
 
 
 def apply_pose_to_frame(context, armature, pose_name, frame):
@@ -122,23 +85,28 @@ def get_all_clips(context):
 def get_unity_action_and_clip(context):
     try:
         scene = context.scene
-        obj = get_active_unity_object(context)
+        settings = scene.unity_settings
+
+        obj = get_unity_target(context)
 
         action = None
-        unity_clip = None
+        clip = None
+        index = 0
 
         if not obj  or not obj.animation_data or not obj.animation_data.action:
-            return action, unity_clip
+            return action, clip, index
 
         if scene.unity_settings.mode == 'SCENE' and scene.all_unity_clips and len(scene.all_unity_clips) > 0:
-            unity_clip = scene.all_unity_clips[scene.unity_settings.clip_index]
-            action = unity_clip.action
+            clip = scene.all_unity_clips[scene.unity_settings.clip_index]
+            action = clip.action
+            index = settings.clip_index
         else:
-            action = obj.animation_data.action
+            action = settings.active_action
             if action is not None and action.unity_clips and len(action.unity_clips) > 0:
-                unity_clip = action.unity_clips[action.unity_metadata.clip_index]
+                clip = action.unity_clips[action.unity_metadata.clip_index]
+                index = action.unity_metadata.clip_index
 
-        return action, unity_clip
+        return action, clip, index
     except Exception as inst:
         print('get_unity_action_and_clip: {0}'.format(inst))
         raise

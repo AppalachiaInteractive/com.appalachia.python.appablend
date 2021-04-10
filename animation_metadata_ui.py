@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import Menu, UIList
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.animation_metadata import *
 from cspy.animation_metadata_ops import *
@@ -11,7 +11,7 @@ class AM_PT_AnimationMetadata():
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_ARMATURE_action(context)
+        return DOIF.ACTIVE.TYPE.IS_ARMATURE(context) and DOIF.ACTIVE.HAS.ACTION(context)
 
     def do_draw(self, context, scene, layout, obj):
         action = obj.animation_data.action

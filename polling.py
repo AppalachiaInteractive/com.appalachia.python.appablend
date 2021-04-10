@@ -41,206 +41,247 @@ class OBJECT_TYPES:
     CAMERA = 'CAMERA'
     SPEAKER = 'SPEAKER'
 
-class POLL:
-    @classmethod
-    def active_object(cls, context):
-        return context.active_object is not None
+class DOIF:
+    class ACTIVE:
+        @classmethod
+        def OBJECT(cls, c):
+            return c.active_object is not None
+            
+        class TYPE:
+            @classmethod
+            def IS(cls, c, data_type):
+                return DOIF.ACTIVE.OBJECT(c) and c.active_object.type == data_type
+                
+            @classmethod
+            def IS_ARMATURE(cls, c):
+                return cls.IS(c, OBJECT_TYPES.ARMATURE)
 
-    @classmethod
-    def active_unity_object(cls, context):
-        return cspy.unity.get_active_unity_object(context)
+            @classmethod
+            def IS_CURVE(cls, c):
+                return cls.IS(c, OBJECT_TYPES.CURVE)
+
+            @classmethod
+            def IS_MESH(cls, c):
+                return cls.IS(c, OBJECT_TYPES.MESH)
+
+            @classmethod
+            def IS_EMPTY(cls, c):
+                return cls.IS(c, OBJECT_TYPES.EMPTY)
         
-    @classmethod
-    def active_unity_object_action(cls, context):
-        uo = cls.active_unity_object(context)
-        return uo and uo.animation_data and uo.animation_data.action
+        class HAS:
+            @classmethod
+            def DATA(cls, c):
+                return DOIF.ACTIVE.OBJECT(c) and c.active_object.data is not None
 
-    @classmethod
-    def active_unity_object_clips(cls, context):
-        uo = cls.active_unity_object(context)
-        return uo and uo.animation_data and uo.animation_data.action and uo.animation_data.action.unity_clips
+            @classmethod
+            def ANIMATION_DATA(cls, c):
+                return DOIF.ACTIVE.OBJECT(c) and c.active_object.animation_data is not None
 
+            @classmethod
+            def ACTION(cls, c):
+                return cls.ANIMATION_DATA(c) and c.active_object.animation_data.action is not None
 
-    @classmethod
-    def active_object_type(cls, context, data_type):
-        return cls.active_object(context) and context.active_object.type == data_type
+            @classmethod
+            def _UNITY_CLIPS(cls, c):
+                return cls.ACTION(c) and c.active_object.animation_data.action.unity_clips is not None
 
-    @classmethod
-    def active_object_data(cls, context):
-        return cls.active_object(context) and context.active_object.data is not None
+            @classmethod
+            def NO_UNITY_CLIPS(cls, c):
+                return not cls._UNITY_CLIPS(c)
 
-    @classmethod
-    def active_object_animation_data(cls, context):
-        return cls.active_object(context) and  context.active_object.animation_data is not None
+            @classmethod
+            def ONE_UNITY_CLIP(cls, c):
+                return cls._UNITY_CLIPS(c) and len(c.active_object.animation_data.action.unity_clips) == 1
 
-    @classmethod
-    def active_object_action(cls, context):
-        return cls.active_object_animation_data(context) and context.active_object.animation_data.action is not None
+            @classmethod
+            def SOME_UNITY_CLIPS(cls, c):
+                return cls._UNITY_CLIPS(c) and len(c.active_object.animation_data.action.unity_clips) > 0
 
-    @classmethod
-    def active_object_unity_clips(cls, context):
-        return cls.active_object_action(context) and context.active_object.animation_data.action.unity_clips #and len(context.active_object.animation_data.action.unity_clips) > 0
+            @classmethod
+            def MULTIPLE_UNITY_CLIPS(cls, c):
+                return cls._UNITY_CLIPS(c) and len(c.active_object.animation_data.action.unity_clips) > 1
 
-    @classmethod
-    def active_object_unity_clips_none(cls, context):
-        return cls.active_object_action(context) and context.active_object.animation_data.action.unity_clips and len(context.active_object.animation_data.action.unity_clips) == 0
+            @classmethod
+            def SPLIT_UNITY_CLIPS(cls, c):
+                return cls._UNITY_CLIPS(c) and c.active_object.animation_data.action.unity_clips[0].source_action is not None
 
-    @classmethod
-    def active_object_unity_clips_one(cls, context):
-        return cls.active_object_action(context) and context.active_object.animation_data.action.unity_clips and len(context.active_object.animation_data.action.unity_clips) == 1
+            @classmethod
+            def BONES(cls, c):
+                return DOIF.ACTIVE.TYPE.IS_ARMATURE(c) and len(c.active_object.data.bones) > 0
 
-    @classmethod
-    def active_object_unity_clips_some(cls, context):
-        return cls.active_object_action(context) and context.active_object.animation_data.action.unity_clips and len(context.active_object.animation_data.action.unity_clips) > 0
+            @classmethod
+            def ANIM_RET(cls, c):
+                return DOIF.ACTIVE.OBJECT(c) and c.active_object.anim_ret.source != '' and DOIF.ACTIVE.POSE_BONE(c)
 
-    @classmethod
-    def active_object_unity_clips_multiple(cls, context):
-        return cls.active_object_unity_clips(context) and len(context.active_object.animation_data.action.unity_clips) > 1
+        @classmethod
+        def POSE_BONE(cls, c):
+            return c.active_pose_bone
 
-    @classmethod
-    def active_object_unity_clips_split(cls, context):
-        return cls.active_object_unity_clips_one(context) and context.active_object.animation_data.action.unity_clips[0].source_action is not None
+    class MODE:            
+        @classmethod
+        def IS(cls, c, mode):
+            return c.mode == mode
 
-    @classmethod
-    def active_ARMATURE(cls, context):
-        return cls.active_object_type(context, OBJECT_TYPES.ARMATURE)
+        @classmethod
+        def IS_EDIT_MESH(cls, c):
+            return cls.IS(c, CONTEXT_MODES.EDIT_MESH)
 
-    @classmethod
-    def active_ARMATURE_AND_BONES(cls, context):
-        return cls.active_object_type(context, OBJECT_TYPES.ARMATURE) and len(context.active_object.data.bones) > 0
+        @classmethod
+        def IS_EDIT_CURVE(cls, c):
+            return cls.IS(c, CONTEXT_MODES.EDIT_CURVE)
 
-    @classmethod
-    def active_ARMATURE_AND_BONES_AND_ANIMRET_SOURCE(cls, context):
-        return (
-            cls.active_ARMATURE(context) and
-            len(context.active_object.data.bones) > 0 and
-            context.active_object.anim_ret.source != '' and
-            context.active_pose_bone
-        )
+        @classmethod
+        def IS_EDIT_SURFACE(cls, c):
+            return cls.IS(c, CONTEXT_MODES.EDIT_SURFACE)
 
-    @classmethod
-    def active_ARMATURE_action(cls, context):
-        return cls.active_ARMATURE(context) and cls.active_object_action(context)
+        @classmethod
+        def IS_EDIT_TEXT(cls, c):
+            return cls.IS(c, CONTEXT_MODES.EDIT_TEXT)
 
-    @classmethod
-    def active_CURVE(cls, context):
-        return cls.active_object_type(context, OBJECT_TYPES.CURVE)
+        @classmethod
+        def IS_EDIT_ARMATURE(cls, c):
+            return cls.IS(c, CONTEXT_MODES.EDIT_ARMATURE)
 
-    @classmethod
-    def active_MESH(cls, context):
-        return cls.active_object_type(context, OBJECT_TYPES.MESH)
+        @classmethod
+        def IS_EDIT_METABALL(cls, c):
+            return cls.IS(c, CONTEXT_MODES.EDIT_METABALL)
 
-    @classmethod
-    def active_EMPTY(cls, context):
-        return cls.active_object_type(context, OBJECT_TYPES.EMPTY)
+        @classmethod
+        def IS_EDIT_LATTICE(cls, c):
+            return cls.IS(c, CONTEXT_MODES.EDIT_LATTICE)
 
-    @classmethod
-    def mode(cls, context, mode):
-        return context.mode == mode
-    @classmethod
-    def mode_EDIT_MESH(cls, context):
-        return cls.mode(context, CONTEXT_MODES.EDIT_MESH)
+        @classmethod
+        def IS_POSE(cls, c):
+            return cls.IS(c, CONTEXT_MODES.POSE)
 
-    @classmethod
-    def mode_EDIT_CURVE(cls, context):
-        return cls.mode(context, CONTEXT_MODES.EDIT_CURVE)
+        @classmethod
+        def IS_SCULPT(cls, c):
+            return cls.IS(c, CONTEXT_MODES.SCULPT)
 
-    @classmethod
-    def mode_EDIT_SURFACE(cls, context):
-        return cls.mode(context, CONTEXT_MODES.EDIT_SURFACE)
+        @classmethod
+        def IS_PAINT_WEIGHT(cls, c):
+            return cls.IS(c, CONTEXT_MODES.PAINT_WEIGHT)
 
-    @classmethod
-    def mode_EDIT_TEXT(cls, context):
-        return cls.mode(context, CONTEXT_MODES.EDIT_TEXT)
+        @classmethod
+        def IS_PAINT_VERTEX(cls, c):
+            return cls.IS(c, CONTEXT_MODES.PAINT_VERTEX)
 
-    @classmethod
-    def mode_EDIT_ARMATURE(cls, context):
-        return cls.mode(context, CONTEXT_MODES.EDIT_ARMATURE)
+        @classmethod
+        def IS_PAINT_TEXTURE(cls, c):
+            return cls.IS(c, CONTEXT_MODES.PAINT_TEXTURE)
 
-    @classmethod
-    def mode_EDIT_METABALL(cls, context):
-        return cls.mode(context, CONTEXT_MODES.EDIT_METABALL)
+        @classmethod
+        def IS_PARTICLE(cls, c):
+            return cls.IS(c, CONTEXT_MODES.PARTICLE)
 
-    @classmethod
-    def mode_EDIT_LATTICE(cls, context):
-        return cls.mode(context, CONTEXT_MODES.EDIT_LATTICE)
+        @classmethod
+        def IS_OBJECT(cls, c):
+            return cls.IS(c, CONTEXT_MODES.OBJECT)
 
-    @classmethod
-    def mode_POSE(cls, context):
-        return cls.mode(context, CONTEXT_MODES.POSE)
+        @classmethod
+        def IS_PAINT_GPENCIL(cls, c):
+            return cls.IS(c, CONTEXT_MODES.PAINT_GPENCIL)
 
-    @classmethod
-    def mode_SCULPT(cls, context):
-        return cls.mode(context, CONTEXT_MODES.SCULPT)
+        @classmethod
+        def IS_EDIT_GPENCIL(cls, c):
+            return cls.IS(c, CONTEXT_MODES.EDIT_GPENCIL)
 
-    @classmethod
-    def mode_PAINT_WEIGHT(cls, context):
-        return cls.mode(context, CONTEXT_MODES.PAINT_WEIGHT)
+        @classmethod
+        def IS_SCULPT_GPENCIL(cls, c):
+            return cls.IS(c, CONTEXT_MODES.SCULPT_GPENCIL)
 
-    @classmethod
-    def mode_PAINT_VERTEX(cls, context):
-        return cls.mode(context, CONTEXT_MODES.PAINT_VERTEX)
+        @classmethod
+        def IS_WEIGHT_GPENCIL(cls, c):
+            return cls.IS(c, CONTEXT_MODES.WEIGHT_GPENCIL)
 
-    @classmethod
-    def mode_PAINT_TEXTURE(cls, context):
-        return cls.mode(context, CONTEXT_MODES.PAINT_TEXTURE)
+        @classmethod
+        def IS_VERTEX_GPENCIL(cls, c):
+            return cls.IS(c, CONTEXT_MODES.VERTEX_GPENCIL)
 
-    @classmethod
-    def mode_PARTICLE(cls, context):
-        return cls.mode(context, CONTEXT_MODES.PARTICLE)
+    class ANIM_RET:
+        @classmethod
+        def IS_NOT_FROZEN(cls, c):
+            return DOIF.ACTIVE.HAS.ANIM_RET(c) and not c.active_object.anim_ret.is_frozen
 
-    @classmethod
-    def mode_OBJECT(cls, context):
-        return cls.mode(context, CONTEXT_MODES.OBJECT)
+    class DATA:
+        @classmethod
+        def ACTIONS(cls, c):
+            return len(bpy.data.actions) > 0
 
-    @classmethod
-    def mode_PAINT_GPENCIL(cls, context):
-        return cls.mode(context, CONTEXT_MODES.PAINT_GPENCIL)
+        @classmethod
+        def ARMATURES(cls, c):
+            return len(bpy.data.armatures) > 0
+    
+    class UNITY:
+        class TARGET:
+            @classmethod
+            def SET(cls, c):
+                return cspy.unity.get_unity_target(c)           
+            
+            class HAS:                    
+                @classmethod
+                def ACTION(cls, c):
+                    uo = cspy.unity.get_unity_target(c)
+                    return DOIF.UNITY.TARGET.SET(c) and uo.animation_data and uo.animation_data.action
 
-    @classmethod
-    def mode_EDIT_GPENCIL(cls, context):
-        return cls.mode(context, CONTEXT_MODES.EDIT_GPENCIL)
+                @classmethod
+                def _UNITY_CLIPS(cls, c):
+                    uo = cspy.unity.get_unity_target(c)
+                    return cls.ACTION(c) and uo.animation_data.action.unity_clips is not None
 
-    @classmethod
-    def mode_SCULPT_GPENCIL(cls, context):
-        return cls.mode(context, CONTEXT_MODES.SCULPT_GPENCIL)
+                @classmethod
+                def NO_UNITY_CLIPS(cls, c):
+                    return not cls._UNITY_CLIPS(c)
 
-    @classmethod
-    def mode_WEIGHT_GPENCIL(cls, context):
-        return cls.mode(context, CONTEXT_MODES.WEIGHT_GPENCIL)
+                @classmethod
+                def ONE_UNITY_CLIP(cls, c):
+                    uo = cspy.unity.get_unity_target(c)
+                    return cls._UNITY_CLIPS(c) and len(uo.animation_data.action.unity_clips) == 1
 
-    @classmethod
-    def mode_VERTEX_GPENCIL(cls, context):
-        return cls.mode(context, CONTEXT_MODES.VERTEX_GPENCIL)
+                @classmethod
+                def SOME_UNITY_CLIPS(cls, c):
+                    uo = cspy.unity.get_unity_target(c)
+                    return cls._UNITY_CLIPS(c) and len(uo.animation_data.action.unity_clips) > 0
 
-    @classmethod
-    def ANIM_RET_IS_NOT_FROZEN(cls, context):
-        return not context.active_object.anim_ret.is_frozen
+                @classmethod
+                def MULTIPLE_UNITY_CLIPS(cls, c):
+                    uo = cspy.unity.get_unity_target(c)
+                    return cls._UNITY_CLIPS(c) and len(uo.animation_data.action.unity_clips) > 1
 
-    @classmethod
-    def active_pose_bone(cls, context):
-        return context.active_pose_bone
+                @classmethod
+                def SPLIT_UNITY_CLIPS(cls, c):
+                    uo = cspy.unity.get_unity_target(c)
+                    return cls._UNITY_CLIPS(c) and uo.animation_data.action.unity_clips[0].source_action is not None
+                
+            class IS:
+                @classmethod
+                def NOT_PROTECTED(cls, c):
+                    uo = cspy.unity.get_unity_target(c)
+                    DOIF.UNITY.TARGET.HAS.ACTION(c) and not uo.animation_data.action.unity_metadata.clips_protected
 
-    @classmethod
-    def data_actions(cls, context):
-        return len(bpy.data.actions) > 0
+        class SHEETS:
+             @classmethod
+             def HAS_PATH(cls, c):
+                return c.scene.unity_settings.sheet_dir_path != ''
+        class KEYS:
+            @classmethod
+            def HAS_PATH(cls, c):
+                return c.scene.unity_settings.key_dir_path != ''
 
-    @classmethod
-    def data_armatures(cls, context):
-        return len(bpy.data.armatures) > 0
+        class MODE:
+            @classmethod
+            def IS(cls, c, mode):
+                return c.scene.unity_settings.mode == mode
 
-    @classmethod
-    def unity_mode(cls, context, mode):
-        return context.scene.unity_settings.mode == mode
+            @classmethod
+            def SCENE(cls, c):
+                return DOIF.UNITY.TARGET.SET(c) and cls.IS(c, 'SCENE')
 
-    @classmethod
-    def unity_mode_SCENE(cls, context):
-        return  cls.unity_mode(context, 'SCENE')
+            @classmethod
+            def TARGET(cls, c):
+                return DOIF.UNITY.TARGET.SET(c) and cls.IS(c, 'TARGET')
 
-    @classmethod
-    def unity_mode_TARGET(cls, context):
-        return cls.active_unity_object(context) and cls.unity_mode(context, 'TARGET')
-
-    @classmethod
-    def unity_mode_ACTIVE(cls, context):
-        return cls.active_unity_object(context) and cls.unity_mode(context, 'ACTIVE')
+            @classmethod
+            def ACTIVE(cls, c):
+                return DOIF.UNITY.TARGET.SET(c) and cls.IS(c, 'ACTIVE')
+        

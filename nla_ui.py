@@ -2,7 +2,7 @@
 import bpy
 import cspy
 from cspy.ui import PT_OPTIONS, PT_, UI
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.nla import *
 from cspy.nla_ops import *
 import cspy.unity_ul
@@ -29,7 +29,6 @@ class NLA_EDITOR_PT_UI_Tool_NLA(bpy.types.Panel, PT_, UI.NLA_EDITOR.UI.Tool):
     @classmethod
     def do_poll(cls, context):
         return True
-        #return POLL.active_object_animation_data(context)
 
     def do_draw(self, context, scene, layout, obj):
         box = layout.box()

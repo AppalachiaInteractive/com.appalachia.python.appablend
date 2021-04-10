@@ -1,13 +1,13 @@
 import bpy, cspy
 from cspy.ui import PT_OPTIONS, PT_, UI
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.bones_ops import *
 from cspy.bones import *
 
 class _PT_POSEBONE_:
     @classmethod
     def do_poll(cls, context):
-        return POLL.mode_POSE(context) and POLL.active_pose_bone(context)
+        return DOIF.MODE.IS_POSE(context) and DOIF.ACTIVE.POSE_BONE(context)
 
 class VIEW_3D_PT_PoseBone(_PT_POSEBONE_, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
     bl_label = "Pose Bone"

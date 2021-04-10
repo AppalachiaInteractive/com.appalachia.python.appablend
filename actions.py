@@ -317,6 +317,13 @@ def group_actions_by_bone():
                 else:
                     group = action.groups.new(bone_name)
                 fcurve.group = group
+        
+        overall = action.groups.get('Armature')
+        if not overall:
+            overall = action.groups.new('Armature')
+        for fcurve in action.fcurves:
+            if fcurve.group is None:
+                fcurve.group = overall
 
 def split_action(master_action, new_action_name, old_clip_name, new_clip_name, start, end):
 

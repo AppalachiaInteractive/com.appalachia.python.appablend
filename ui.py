@@ -123,6 +123,7 @@ class _PT_CATEGORY:
     ATTRIBUTES              = 'Attributes'
     BOOKMARKS               = 'Bookmarks'
     CACHE                   = 'Cache'
+    DRIVERS                 = 'Drivers'
     FILTER                  = 'Filter'
     FOOTAGE                 = 'Footage'
     IMAGE                   = 'Image'
@@ -320,6 +321,10 @@ class UI:
                 bl_space_type=_PT_SPACE_TYPE.GRAPH_EDITOR
                 bl_region_type = _PT_REGION_TYPE.UI
                 bl_category = _PT_CATEGORY.TOOL
+            class Drivers:
+                bl_space_type=_PT_SPACE_TYPE.GRAPH_EDITOR
+                bl_region_type = _PT_REGION_TYPE.UI
+                bl_category = _PT_CATEGORY.DRIVERS
     class NLA_EDITOR:
         bl_space_type=_PT_SPACE_TYPE.NLA_EDITOR
         class UI:

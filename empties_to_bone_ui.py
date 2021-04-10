@@ -1,6 +1,6 @@
 import bpy
 from cspy.ui import PT_OPTIONS, PT_, UI
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.empties_to_bone import *
 from cspy.empties_to_bone_ops import *
 from cspy import subtypes
@@ -13,7 +13,6 @@ class EB_PT_menu(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
     @classmethod
     def do_poll(cls, context):
         return True
-        #return POLL.active_object(context)
 
     def do_draw(self, context, scene, layout, obj):
         arm = scene.eb_target_armature

@@ -1,7 +1,7 @@
 import bpy, cspy
 from bpy.types import Operator
 from cspy.ops import OPS_, OPS_DIALOG
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.actions import *
 import math, mathutils
 from mathutils import Matrix, Vector, Euler, Quaternion
@@ -37,7 +37,7 @@ class ActionOpHelper(bpy.types.PropertyGroup):
 class ACT_Single_Action_Op:
     @classmethod
     def do_poll(cls, context):
-        return context.active_object.animation_data.action
+        return DOIF.ACTIVE.HAS.ACTION(context)
 
     def do_execute(self, context):
         obj = context.active_object
@@ -54,7 +54,7 @@ class ACT_Single_Action_Op:
 class ACT_Multiple_Action_Op:
     @classmethod
     def do_poll(cls, context):
-        return len(bpy.data.actions) > 0
+        return DOIF.DATA.ACTIONS(context)
 
     def do_execute(self, context):
         obj = context.active_object
@@ -124,7 +124,8 @@ class ACT_OT_bake_selected_to_action(ACT_BAKE, ACT_Single_Action_Op, OPS_, Opera
 
     @classmethod
     def do_poll(cls, context):
-        return ACT_Single_Action_Op.do_poll(context) and POLL.active_ARMATURE_AND_BONES(context)
+        c = context
+        return ACT_Single_Action_Op.do_poll(context) and DOIF.ACTIVE.TYPE.IS_ARMATURE(c) and DOIF.ACTIVE.HAS.BONES(c) and DOIF.ACTIVE.HAS.BONES(context)
 
 class ACT_OT_bake_selected_to_action_all(OPS_, ACT_BAKE, ACT_Multiple_Action_Op, Operator):
     """Bake selected bones to all actions"""
@@ -133,7 +134,7 @@ class ACT_OT_bake_selected_to_action_all(OPS_, ACT_BAKE, ACT_Multiple_Action_Op,
 
     @classmethod
     def do_poll(cls, context):
-        return ACT_Multiple_Action_Op.do_poll(context) and POLL.active_ARMATURE_AND_BONES(context)
+        return ACT_Multiple_Action_Op.do_poll(context) and DOIF.ACTIVE.HAS.BONES(context)
 
 class ACT_OT_sample_fcurves(ACT_Single_Action_Op, OPS_, Operator):
     """Sample all fcurve frames"""
@@ -214,7 +215,7 @@ class ACT_OT_combine_all_actions(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return len(bpy.data.actions) > 0
+        return DOIF.DATA.ACTIONS(context)
 
     def do_execute(self, context):
         obj = context.active_object
@@ -391,7 +392,7 @@ class ACT_OT_delete_bone_all(OPS_, ACT_Multiple_Action_Op, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return ACT_Multiple_Action_Op.do_poll(context) and POLL.active_ARMATURE_AND_BONES(context)
+        return ACT_Multiple_Action_Op.do_poll(context) and DOIF.ACTIVE.HAS.BONES(context)
 
     def exec(self, context, action):
         scene = context.scene
@@ -422,7 +423,7 @@ class ACT_OT_rename_bone_all(OPS_, ACT_Multiple_Action_Op, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return ACT_Multiple_Action_Op.do_poll(context) and POLL.active_ARMATURE_AND_BONES(context)
+        return ACT_Multiple_Action_Op.do_poll(context) and DOIF.ACTIVE.HAS.BONES(context)
 
     def exec(self, context, action):
         scene = context.scene

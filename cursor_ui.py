@@ -2,7 +2,7 @@
 import bpy
 import cspy
 from cspy.ops import OPS_, OPS_DIALOG
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.actions import *
 from cspy.actions_ops import *
@@ -17,7 +17,6 @@ class VIEW_3D_PT_UI_Tool_Cursor(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
 
     @classmethod
     def do_poll(cls, context):
-        #return POLL.active_object_animation_data(context)
         return True
 
     def do_draw(self, context, scene, layout, obj):

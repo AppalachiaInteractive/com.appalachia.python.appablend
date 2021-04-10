@@ -180,12 +180,12 @@ class PoseCorrection(bpy.types.PropertyGroup):
 
     def get_location_correction(self):
         current = self.get_location()
-        orig = self.location_reference()
+        orig = self.location_reference
         diff = orig - current
         inf = self.location_influence
 
         if self.location_correction_type == 'LOCK':
-            return current - current.lerp(orig, inf)
+            return diff# - current.lerp(orig, inf)
         elif self.location_correction_type == 'NEGATE':
             nl = self.get_location_by_bone(self.location_negate_bone_name)
             return current - current.lerp(nl, inf)

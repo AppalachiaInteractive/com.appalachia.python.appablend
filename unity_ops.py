@@ -2,7 +2,7 @@ import bpy, cspy
 from bpy.types import Operator
 from cspy import ops, polling, unity, unity_keys, unity_clips, timeline
 from cspy.ops import OPS_, OPS_DIALOG
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.unity import *
 from cspy.unity_keys import *
 from cspy.unity_clips import *
@@ -17,10 +17,10 @@ class UNITY_OT_refresh_key_data(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_unity_clips_split(context)
+        return DOIF.UNITY.TARGET.HAS.SPLIT_UNITY_CLIPS(context)
 
     def do_execute(self, context):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         scene = context.scene
         action = obj.animation_data.action
 
@@ -36,10 +36,10 @@ class UNITY_OT_refresh_key_data_all(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return len(bpy.data.actions) > 0 and context.scene.unity_settings.key_dir_path != ''
+        return DOIF.DATA.ACTIONS(context) and DOIF.UNITY.KEYS.HAS_PATH(context)
 
     def do_execute(self, context):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         scene = context.scene
 
         for action in bpy.data.actions:
@@ -62,18 +62,17 @@ class UNITY_OT_refresh_clip_data(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context) and context.scene.unity_settings.sheet_dir_path != ''
+        return DOIF.UNITY.TARGET.SET(context) and context.scene.unity_settings.sheet_dir_path != ''
 
     def do_execute(self, context):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         scene = context.scene
         key_offset = 1
 
         path = bpy.path.abspath(scene.unity_settings.sheet_dir_path)
-        action, clip = get_unity_action_and_clip(context)
+        action, clip, clip_index = get_unity_action_and_clip(context)
 
         UnityClipMetadata.parse_clip_files(context, path, key_offset, action)
-        sync_with_action_mode(context)
         return {'FINISHED'}
 
 class UNITY_OT_refresh_clip_data_all(OPS_, Operator):
@@ -83,7 +82,7 @@ class UNITY_OT_refresh_clip_data_all(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return len(bpy.data.actions) > 0 and context.scene.unity_settings.sheet_dir_path != ''
+        return DOIF.DATA.ACTIONS(context) and DOIF.UNITY.SHEETS.HAS_PATH(context)
 
     def do_execute(self, context):
         scene = context.scene
@@ -105,10 +104,10 @@ class UNITY_OT_clear_clip_data(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object_clips(context)  and not get_active_unity_object(context).animation_data.action.unity_metadata.clips_protected and context.scene.unity_settings.sheet_dir_path != ''
+        return DOIF.UNITY.TARGET.HAS.SOME_UNITY_CLIPS(context)  and not get_unity_target(context).animation_data.action.unity_metadata.clips_protected and context.scene.unity_settings.sheet_dir_path != ''
 
     def do_execute(self, context):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
 
         action = obj.animation_data.action
 
@@ -123,7 +122,7 @@ class UNITY_OT_clear_clip_data_all(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return len(bpy.data.actions) > 0 and context.scene.unity_settings.sheet_dir_path != ''
+        return DOIF.DATA.ACTIONS(context) and context.scene.unity_settings.sheet_dir_path != ''
 
     def do_execute(self, context):
 
@@ -147,7 +146,7 @@ class UNITY_OT_clamp_to_clip(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
     def do_execute(self, context):
         active_clip = bpy.data.actions[self.action_name].unity_clips[self.clip_name]
@@ -166,7 +165,7 @@ class UNITY_OT_clamp_to_clip_and_play(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
     def do_execute(self, context):
         active_clip = bpy.data.actions[self.action_name].unity_clips[self.clip_name]
@@ -184,10 +183,10 @@ class UNITY_OT_decorate_action(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
     def do_execute(self, context):
-        action = get_active_unity_object(context).animation_data.action
+        action = get_unity_target(context).animation_data.action
         clip = action.unity_clips[clip_name]
 
         clip.decorate_action(action)
@@ -202,12 +201,12 @@ class UNITY_OT_decorate_action_all(OPS_, Operator):
     @classmethod
     def do_poll(cls, context):
         try:
-            return get_active_unity_object(context).animation_data.action.unity_clips
+            return get_unity_target(context).animation_data.action.unity_clips
         except:
             return False
 
     def do_execute(self, context):
-        action = get_active_unity_object(context).animation_data.action
+        action = get_unity_target(context).animation_data.action
 
         for clip in action.unity_clips:
             clip.decorate_action(action)
@@ -221,10 +220,10 @@ class UNITY_OT_sync_actions_with_clips(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
     def do_execute(self, context):
-        action = get_active_unity_object(context).animation_data.action
+        action = get_unity_target(context).animation_data.action
 
         for clip in action.unity_clips:
             clip.action = action
@@ -239,10 +238,10 @@ class UNITY_OT_sort_clip_data(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
     def do_execute(self, context):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
 
         action = obj.animation_data.action
 
@@ -257,7 +256,7 @@ class UNITY_OT_sort_clip_data_all(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return len(bpy.data.actions) > 0
+        return DOIF.DATA.ACTIONS(context)
 
     def do_execute(self, context):
         for action in bpy.data.actions:
@@ -272,11 +271,11 @@ class UNITY_OT_copy_clips_from_template(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
     def do_execute(self, context):
-        action = get_active_unity_object(context).animation_data.action
-        template = action.unity_metadata.unity_clip_template
+        action = get_unity_target(context).animation_data.action
+        template = action.unity_metadata.clip_template
 
         action.unity_clips.clear()
 
@@ -290,7 +289,7 @@ class UNITY_OT_copy_clips_from_template(OPS_, Operator):
 class UNITY_OT_all_clips(OPS_):
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object_clips(context)
+        return DOIF.UNITY.TARGET.HAS.SOME_UNITY_CLIPS(context)
 
     def do_execute(self, context):
         clips = get_filtered_clips(context)
@@ -331,10 +330,10 @@ class UNITY_OT_get_current(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object_clips(context)
+        return DOIF.UNITY.TARGET.HAS.SOME_UNITY_CLIPS(context)
 
     def do_execute(self, context):
-        action = get_active_unity_object(context).animation_data.action
+        action = get_unity_target(context).animation_data.action
 
         for fcurve in action.fcurves:
             for clip in action.unity_clips:
@@ -357,7 +356,7 @@ class UNITY_OT_update_master_clip_metadata(OPS_, Operator):
     def do_execute(self, context):
         master_action_name = 'MASTER'
         master_action = bpy.data.actions[master_action_name]
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
 
         padding = 10
         round_to_nearest = 10
@@ -415,10 +414,10 @@ class UNITY_OT_remove_non_clip_keys(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
     def do_execute(self, context):
-        action = get_active_unity_object(context).animation_data.action
+        action = get_unity_target(context).animation_data.action
 
         for fcurve in action.fcurves:
             for keyframe_point in reversed(fcurve.keyframe_points):
@@ -446,10 +445,10 @@ class UNITY_OT_split_by_clip(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context) and len(get_active_unity_object(context).animation_data.action.unity_clips) > 1
+        return DOIF.UNITY.TARGET.SET(context) and len(get_unity_target(context).animation_data.action.unity_clips) > 1
 
     def do_execute(self, context):
-        action = get_active_unity_object(context).animation_data.action
+        action = get_unity_target(context).animation_data.action
 
         for clip in action.unity_clips:
             new_action_name = '{0}_{1}'.format(action.name, clip.name)
@@ -503,7 +502,7 @@ class UNITY_OT_bake:
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_unity_clips_some(context)
+        return DOIF.ACTIVE.HAS.SOME_UNITY_CLIPS(context)
 
     def bake_action(self, context, obj, action, clip):
         obj.animation_data.action = clip.action
@@ -530,8 +529,8 @@ class UNITY_OT_bake_clip(OPS_, UNITY_OT_bake, Operator):
     bl_label = "Bake Clip"
 
     def do_execute(self, context):
-        obj = get_active_unity_object(context)
-        action, clip = get_unity_action_and_clip(context)
+        obj = get_unity_target(context)
+        action, clip, clip_index = get_unity_action_and_clip(context)
 
         self.bake_action(context, obj, action, clip)
 
@@ -543,7 +542,7 @@ class UNITY_OT_bake_all_clips(OPS_, UNITY_OT_bake, Operator):
     bl_label = "Bake All Clips"
 
     def do_execute(self, context):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
 
         clips = get_filtered_clips(context)
 
@@ -560,7 +559,7 @@ class UNITY_OT_refresh_split_clip(OPS_,  Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_unity_clips_some(context) and len(bpy.data.actions) > 1
+        return DOIF.ACTIVE.HAS.SOME_UNITY_CLIPS(context) and len(bpy.data.actions) > 1
 
 class UNITY_OT_refresh_split_clips_all(OPS_, Operator):
     """Reloads the keys from the source clip into all actions."""
@@ -569,7 +568,7 @@ class UNITY_OT_refresh_split_clips_all(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context) and len(bpy.data.actions) > 1
+        return DOIF.UNITY.TARGET.SET(context) and len(bpy.data.actions) > 1
 
     def do_execute(self, context):
         for action in bpy.data.actions:
@@ -591,10 +590,10 @@ class UNITY_OT_Set_By_Current_Frame(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
     def do_execute(self, context):
-        action = get_active_unity_object(context).animation_data.action
+        action = get_unity_target(context).animation_data.action
 
         f = context.scene.frame_current
         for index, clip in enumerate(action.unity_clips):
@@ -618,10 +617,10 @@ class UNITY_OT_apply_pose(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_unity_clips(context)
+        return DOIF.UNITY.TARGET.HAS.SOME_UNITY_CLIPS(context)
 
     def do_execute(self, context):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         action = obj.animation_data.action
 
         for bone in obj.data.bones:
@@ -645,10 +644,10 @@ class UNITY_OT_new_pose(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_unity_clips(context)
+        return DOIF.UNITY.TARGET.HAS.SOME_UNITY_CLIPS(context)
 
     def do_execute(self, context):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         action = obj.animation_data.action
         clip = action.unity_clips[action.unity_metadata.clip_index]
 
@@ -671,10 +670,10 @@ class UNITY_OT_Clamp_Keys(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_unity_clips(context)
+        return DOIF.UNITY.TARGET.HAS.SOME_UNITY_CLIPS(context)
 
     def do_execute(self, context):
-        action = get_active_unity_object(context).animation_data.action
+        action = get_unity_target(context).animation_data.action
 
         start_ends, starts, ends, minf, maxf = get_clip_frame_range_analysis(action)
 
@@ -691,7 +690,7 @@ class UNITY_OT_Clamp_Keys(OPS_, Operator):
 
 class _UNITY_OT:
     def do_execute(self, context):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         action = obj.animation_data.action
         clip = None
 
@@ -705,12 +704,12 @@ class _UNITY_OT:
 class UNITY_OT(_UNITY_OT):
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
 class UNITY_OT_clip(_UNITY_OT):
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_unity_clips_some(context)
+        return DOIF.ACTIVE.HAS.SOME_UNITY_CLIPS(context)
 
 class UNITY_OT_decorate_clip(UNITY_OT_clip, OPS_, Operator):
     """Decorate the active clip."""
@@ -791,7 +790,7 @@ class UNITY_OT_clean_single_clip_actions(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_object_unity_clips(context) and context.scene.unity_settings.mode == 'SCENE'
+        return DOIF.UNITY.TARGET.HAS.SOME_UNITY_CLIPS and DOIF.UNITY.MODE.SCENE(context)
 
     def do_execute(self, context):
         scene = context.scene

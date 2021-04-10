@@ -2,7 +2,7 @@ import cspy
 from cspy.unity import *
 from cspy.unity_ops import *
 from cspy.ui import PT_OPTIONS, PT_, UI
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy import subtypes
 
 def draw_clip_row(context, action, unity_clip, layout):

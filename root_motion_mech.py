@@ -41,20 +41,23 @@ def get_or_create_collection(context, name, parent):
     
     if parent and c.name not in parent.children:
         parent.children.link(c)
+    
+    return c
 
 def get_or_create_empty(context, name, parent, collection, draw_size, draw_type):    
     o = bpy.data.objects.get(name)    
     if not o:
         o = EMPTY.create(name)
-        context.scene.objects.link( o )
 
     o.empty_display_size = draw_size
     o.empty_display_type = draw_type
 
     if parent:
         parent.children.link(o)
-    if collection:
-        collection.children.link(o)
+    if collection and not o.name in collection.objects:
+        collection.objects.link(o)
+    else:
+        context.scene.collection.objects.link( o )
 
     return o
 
@@ -115,8 +118,20 @@ def add_child_of_constraint(obj, name, target):
     con.inverse_matrix = con.target.matrix_world.inverted()
     return con
 
+def refresh_child_of_matrices(armature):
+    collection = 'Root Motion'
+
+    all_objects = reversed(cspy.hierarchy.get_collection_hierarchy(collection))
+
+    for obj in all_objects:
+        for constraint in obj.constraints:
+            if constraint.type == 'CHILD_OF':
+                constraint.inverse_matrix = constraint.target.matrix_world.inverted()
+                
+
+
 def add_limit_loc_constraint(obj, name):
-    t = 'LIMIT_LOC'
+    t = 'LIMIT_LOCATION'
     con = get_or_create_constraint(obj, name, t)    
     con.name = name    
     return con
@@ -142,7 +157,7 @@ def add_driver(obj, data_path, array_index, driver_type, target, target_data_pat
     if len(drv.variables) > 0:
         v = drv.variables[0]
     else:
-        v = drv.variables.new(target_v_name)
+        v = drv.variables.new()
     
     v.name = target_v_name
     v.targets[0].id = target
@@ -156,6 +171,8 @@ def create_root_motion_setup(context, armature):
     scene = context.scene
     sc = scene.collection
 
+    orig_entered, orig_active, orig_mode = cspy.modes.enter_mode_if(cspy.modes.MODE_OBJECT, armature)
+
     to_rest_position(armature)
     settings = armature.data.root_motion_settings
     
@@ -168,36 +185,40 @@ def create_root_motion_setup(context, armature):
     dt = EMPTY.DISPLAY_TYPE
     new = get_or_create_empty
     c = context
-    _00_basis                 = new(c, '_00_basis',                 None, rm_ac, 0.15, dt.PLAIN_AXES)
-    _01_current               = new(c, '_01_current',               None, rm_ac, 0.50, dt.PLAIN_AXES)
-    _02_tracking              = new(c, '_02_tracking',              None, rm_ac, 0.50, dt.ARROWS)
-    _03_offset                = new(c, '_03_offset',                None, rm_ac, 0.22, dt.ARROWS)
-    _05_foundation_adjustment = new(c, '_05_foundation_adjustment', None, rm_ac, 0.40, dt.ARROWS)
-    _10_start                 = new(c, '_10_start',                 None, rm_ac, 0.81, dt.ARROWS)
-    _35_baked_loc             = new(c, '_35_baked_loc',             None, rm_sc, 0.19, dt.PLAIN_AXES)
-    _35_baked_rot             = new(c, '_35_baked_rot',             None, rm_sc, 0.20, dt.PLAIN_AXES)
-    _50_aggregate_loc         = new(c, '_50_aggregate_loc',         None, rm_sc, 0.27, dt.PLAIN_AXES)
-    _51_aggregate             = new(c, '_51_aggregate',             None, rm_sc, 0.41, dt.PLAIN_AXES)
-    _97_root_adjustment       = new(c, '_97_root_adjustment',       None, rm_rc, 0.35, dt.ARROWS)
-    _98_rootmotion_final      = new(c, '_98_rootmotion_final',      None, rm_rc, 0.35, dt.ARROWS)
-    _01_pose                  = new(c, '_01_pose',                  None, rm_pc, 0.20, dt.ARROWS)
-    _02_hip_adjustment        = new(c, '_02_hip_adjustment',        None, rm_pc, 0.40, dt.ARROWS)
-    _99_hips_final            = new(c, '_99_hips_final',            None, rm_pc, 0.10, dt.ARROWS)
-    Hips                      = new(c, 'Hips',                      None, rmc,   0.52, dt.CUBE)
-    RootMotion                = new(c, 'RootMotion',                None, rmc,   0.48, dt.ARROWS)
+    _00_basis                 = new(c, '_00_basis',                 None, rm_ac, 0.10, dt.PLAIN_AXES)
+    _01_current               = new(c, '_01_current',               None, rm_ac, 0.11, dt.PLAIN_AXES)
+    _02_tracking              = new(c, '_02_tracking',              None, rm_ac, 0.13, dt.ARROWS)
+    _03_offset                = new(c, '_03_offset',                None, rm_ac, 0.15, dt.ARROWS)
+    _05_foundation_adjustment = new(c, '_05_foundation_adjustment', None, rm_ac, 0.18, dt.ARROWS)
+    _10_start                 = new(c, '_10_start',                 None, rm_ac, 0.21, dt.ARROWS)
+    _21_baked_rot             = new(c, '_21_baked_rot',             None, rm_sc, 0.25, dt.ARROWS)
+    _22_baked_loc             = new(c, '_22_baked_loc',             None, rm_sc, 0.29, dt.ARROWS)
+    _28_aggregate_loc         = new(c, '_28_aggregate_loc',         None, rm_sc, 0.34, dt.ARROWS)
+    _29_aggregate             = new(c, '_29_aggregate',             None, rm_sc, 0.39, dt.ARROWS)
+    _80_root_adjustment_rot   = new(c, '_80_root_adjustment_rot',   None, rm_rc, 0.45, dt.ARROWS)
+    _81_root_adjustment_loc   = new(c, '_81_root_adjustment_loc',   None, rm_rc, 0.51, dt.ARROWS)
+    _89_rootmotion_final      = new(c, '_89_rootmotion_final',      None, rm_rc, 0.57, dt.ARROWS)
+    _01_pose                  = new(c, '_01_pose',                  None, rm_pc, 0.20, dt.SPHERE)
+    _82_hip_adjustment_rot    = new(c, '_82_hip_adjustment_rot',    None, rm_pc, 0.40, dt.SPHERE)
+    _83_hip_adjustment_loc    = new(c, '_83_hip_adjustment_loc',    None, rm_pc, 0.45, dt.SPHERE)
+    _99_hips_final            = new(c, '_99_hips_final',            None, rm_pc, 0.10, dt.SPHERE)
+    Hips                      = new(c, 'Hips',                      None, rmc,   0.25, dt.CUBE)
+    RootMotion                = new(c, 'RootMotion',                None, rmc,   1.00, dt.ARROWS)
     
     if settings.root_bone_name == '':
         settings.root_bone_name = 'Root'
     if settings.hip_bone_name == '':
-        settings.hip_bone_name = 'Hip'
+        settings.hip_bone_name = 'Hips'
     
     settings.root_node = _02_tracking
-    settings.root_bone_offset = _51_aggregate
-    settings.hip_bone_offset = _01_pose
+    settings.root_bone_offset = _89_rootmotion_final
+    settings.hip_bone_offset = _99_hips_final
+    settings.root_final = RootMotion
     
 
-
-    objs = [_00_basis,_01_current,_02_tracking,_03_offset,_05_foundation_adjustment,_10_start,_35_baked_loc,_35_baked_rot,_50_aggregate_loc,_51_aggregate,_97_root_adjustment,_98_rootmotion_final,_01_pose,_02_hip_adjustment,_99_hips_final,Hips,RootMotion]
+    objs = [
+        _00_basis,_01_current,_02_tracking,_03_offset,_05_foundation_adjustment,_10_start,_22_baked_loc,_21_baked_rot,_28_aggregate_loc,_29_aggregate,_80_root_adjustment_rot,_81_root_adjustment_loc,_89_rootmotion_final,_01_pose,_82_hip_adjustment_rot,_83_hip_adjustment_loc,_99_hips_final,Hips,RootMotion
+    ]
 
     for obj in objs:
         obj.matrix_world = Matrix.Identity(4)
@@ -225,47 +246,48 @@ def create_root_motion_setup(context, armature):
     add_copy_location_constraint(_10_start, 'Copy Location', _05_foundation_adjustment, use_offset=True)
     add_copy_rotation_constraint(_10_start, 'Copy Rotation', _05_foundation_adjustment, mix_mode=MIX_MODE.AFTER)
 
-    add_copy_location_constraint(_35_baked_loc, '_rm_x_bake_into', _10_start, use_offset=False, use_x=True,  use_y=False, use_z=False)
-    add_copy_location_constraint(_35_baked_loc, '_rm_y_bake_into', _10_start, use_offset=False, use_x=False, use_y=True,  use_z=False)
-    add_copy_location_constraint(_35_baked_loc, '_rm_z_bake_into', _10_start, use_offset=False, use_x=False, use_y=False, use_z=True)
+    add_copy_location_constraint(_22_baked_loc, '_rm_x_bake_into', _10_start, use_offset=False, use_x=True,  use_y=False, use_z=False)
+    add_copy_location_constraint(_22_baked_loc, '_rm_y_bake_into', _10_start, use_offset=False, use_x=False, use_y=True,  use_z=False)
+    add_copy_location_constraint(_22_baked_loc, '_rm_z_bake_into', _10_start, use_offset=False, use_x=False, use_y=False, use_z=True)
         
-    add_driver(_35_baked_loc, 'constraints["_rm_x_bake_into"].influence', -1, DRIVER.TYPE.SCRIPTED, armature, 'root_motion_x_bake_into', 'v', '1.0-v')
-    add_driver(_35_baked_loc, 'constraints["_rm_y_bake_into"].influence', -1, DRIVER.TYPE.SCRIPTED, armature, 'root_motion_y_bake_into', 'v', '1.0-v')
-    add_driver(_35_baked_loc, 'constraints["_rm_z_bake_into"].influence', -1, DRIVER.TYPE.SCRIPTED, armature, 'root_motion_z_bake_into', 'v', '1.0-v')
+    add_driver(_22_baked_loc, 'constraints["_rm_x_bake_into"].influence', -1, DRIVER.TYPE.SCRIPTED, armature, 'root_motion_x_bake_into', 'v', '1.0-v')
+    add_driver(_22_baked_loc, 'constraints["_rm_y_bake_into"].influence', -1, DRIVER.TYPE.SCRIPTED, armature, 'root_motion_y_bake_into', 'v', '1.0-v')
+    add_driver(_22_baked_loc, 'constraints["_rm_z_bake_into"].influence', -1, DRIVER.TYPE.SCRIPTED, armature, 'root_motion_z_bake_into', 'v', '1.0-v')
  
-    add_copy_rotation_constraint(_35_baked_rot, '_05_rot_bake_into', _10_start, use_x=False, use_y=False)
-    add_driver(_35_baked_rot, 'constraints["_05_rot_bake_into"].influence', -1, DRIVER.TYPE.SCRIPTED, armature, 'root_motion_rot_bake_into', 'v', '1.0-v')
+    add_copy_rotation_constraint(_21_baked_rot, '_05_rot_bake_into', _10_start, use_x=False, use_y=False)
+    add_driver(_21_baked_rot, 'constraints["_05_rot_bake_into"].influence', -1, DRIVER.TYPE.SCRIPTED, armature, 'root_motion_rot_bake_into', 'v', '1.0-v')
     
-    add_child_of_constraint(_50_aggregate_loc, 'Child Of', _35_baked_rot)
-    add_copy_location_constraint(_50_aggregate_loc, _35_baked_loc.name, _35_baked_loc, use_offset=False)
+    add_child_of_constraint(_28_aggregate_loc, 'Child Of', _21_baked_rot)
+    add_copy_location_constraint(_28_aggregate_loc, _22_baked_loc.name, _22_baked_loc, use_offset=False)
 
-    add_copy_transform_constraint(_51_aggregate, 'Copy Transforms', _50_aggregate_loc, None)
+    add_copy_transform_constraint(_29_aggregate, 'Copy Transforms', _28_aggregate_loc, None)
 
-    offset_objs = [
-        (_97_root_adjustment, 'root' ),
-        (_02_hip_adjustment, 'hip' )
+    offset_params = [
+        (_80_root_adjustment_rot, 'root', 'rotation_euler', 'rotation', None),
+        (_81_root_adjustment_loc, 'root', 'location', 'location', _80_root_adjustment_rot),
+        (_82_hip_adjustment_rot, 'hip', 'rotation_euler', 'rotation', None),
+        (_83_hip_adjustment_loc, 'hip', 'location', 'location', _82_hip_adjustment_rot),
     ]
-    offset_keys = [
-        ('location', 'location'),
-        ('rotation_euler', 'rotation'),
-    ]
-    for offset_obj in offset_objs:
-        for offset_key in offset_keys:
-            target = offset_obj[0]
-            bone_name = offset_obj[1]
-            data_path = offset_key[0]
-            var_token = offset_key[1]
 
-            for i in range(3):
-                full_key = '{0}_bone_offset_{1}_{2}'.format(bone_name, var_token, i)
-                add_driver(target, data_path, i, DRIVER.TYPE.AVERAGE, armature, full_key, 'v', '1.0-v')
-          
+    for offset_param in offset_params:        
+        target = offset_param[0]
+        bone_name = offset_param[1]
+        data_path = offset_param[2]
+        var_token = offset_param[3]
+        childof = offset_param[4]
 
-    add_copy_transform_constraint(_98_rootmotion_final, 'Copy Transforms', _51_aggregate, None)
-    add_child_of_constraint(_98_rootmotion_final, 'Child Of', _97_root_adjustment)
-    add_limit_loc_constraint(_98_rootmotion_final, 'Limit Location')
+        for i in range(3):
+            full_key = '{0}_bone_offset_{1}_{2}'.format(bone_name, var_token, i)
+            add_driver(target, data_path, i, DRIVER.TYPE.AVERAGE, armature, full_key, 'v', '1.0-v')
+        
+        if childof:
+            add_child_of_constraint(target, 'Child Of', childof)
 
-    t = _98_rootmotion_final
+    add_copy_transform_constraint(_89_rootmotion_final, 'Copy Transforms', _29_aggregate, None)
+    add_child_of_constraint(_89_rootmotion_final, 'Child Of', _81_root_adjustment_loc)
+    add_limit_loc_constraint(_89_rootmotion_final, 'Limit Location')
+
+    t = _89_rootmotion_final
     base = 'constraints["Limit Location"]'
     for axis in ['x', 'y', 'z']:
         for mm in ['min', 'max']:
@@ -275,18 +297,18 @@ def create_root_motion_setup(context, armature):
             trgt_a = 'root_motion_{0}_limit_{1}'.format(axis, 'neg' if mm == 'min' else 'pos')
             trgt_b = trgt_a + '_val'
 
-            add_driver(t, path_a, -1, DRIVER.TYPE.AVERAGE, obj, trgt_a, 'v', '')
-            add_driver(t, path_b, -1, DRIVER.TYPE.AVERAGE, obj, trgt_b, 'v', '')
+            add_driver(t, path_a, -1, DRIVER.TYPE.AVERAGE, armature, trgt_a, 'v', '')
+            add_driver(t, path_b, -1, DRIVER.TYPE.AVERAGE, armature, trgt_b, 'v', '')
     
     
     add_copy_transform_constraint(_01_pose, 'Copy Transforms', _01_current, None, mix_mode=MIX_MODE.AFTER)
     
     add_copy_transform_constraint(_99_hips_final, 'Copy Transforms', _01_pose, None)
-    add_child_of_constraint(_99_hips_final, 'Child Of', _02_hip_adjustment)
+    add_child_of_constraint(_99_hips_final, 'Child Of', _83_hip_adjustment_loc)
 
     add_copy_transform_constraint(Hips, 'Copy Transforms', _99_hips_final, None)
 
-    add_copy_transform_constraint(RootMotion, 'Copy Transforms', _98_rootmotion_final, None)
+    add_copy_transform_constraint(RootMotion, 'Copy Transforms', _89_rootmotion_final, None)
     add_copy_location_constraint(RootMotion, 'Copy Location', _03_offset, use_offset=True)
     add_copy_rotation_constraint(RootMotion, 'Copy Rotation', _03_offset, mix_mode=MIX_MODE.AFTER, invert_z=True)
 
@@ -337,3 +359,19 @@ def create_root_motion_setup(context, armature):
     cspy.modes.exit_mode_if(entered, active, mode)
 
     to_pose_position(armature)
+
+    for mesh in [obj for obj in bpy.data.objects if obj.type == 'MESH']:
+        for vg in mesh.vertex_groups:
+            if vg.name == settings.original_root_bone:
+                vg.name = settings.hip_bone_name
+
+    to_rest_position(armature)
+    refresh_child_of_matrices(armature)
+    refresh_child_of_matrices(armature)
+    refresh_child_of_matrices(armature)
+    to_pose_position(armature)
+
+    rm_ac.hide_viewport = True
+    rm_sc.hide_viewport = True
+    rm_rc.hide_viewport = True
+    rm_pc.hide_viewport = True

@@ -2,7 +2,7 @@ import bpy, cspy
 from bpy.types import Operator
 from cspy import empties_to_bone
 from cspy.ops import OPS_, OPS_DIALOG
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.empties_to_bone import *
 
 class EB_OPS_():

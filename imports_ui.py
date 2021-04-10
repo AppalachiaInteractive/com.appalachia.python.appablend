@@ -2,7 +2,7 @@ import cspy
 from cspy.imports import *
 from cspy.imports_ops import *
 from cspy.ui import PT_OPTIONS, PT_, UI
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy import subtypes
 
 class IMPORT_PANEL:

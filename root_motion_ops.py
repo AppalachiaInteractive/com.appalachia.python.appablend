@@ -2,14 +2,14 @@ import bpy, cspy
 from bpy.types import Operator
 from cspy import ops, polling, unity, unity_keys, unity_clips, timeline
 from cspy.ops import OPS_, OPS_DIALOG
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.unity import *
+from cspy.actions import *
 from cspy.unity_clips import *
 from cspy.timeline import *
 from cspy.bones import *
 from cspy.root_motion import *
 from cspy.root_motion_mech import *
-
 
 class RM_OT_refresh_settings(OPS_, Operator):
     bl_idname='rm.refresh_settings'
@@ -17,7 +17,7 @@ class RM_OT_refresh_settings(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.data_actions(context)
+        return DOIF.DATA.ACTIONS(context)
     
     def do_execute(self, context):
         for action in bpy.data.actions:
@@ -28,14 +28,13 @@ class RM_OT_refresh_settings(OPS_, Operator):
             if armature.root_motion_settings:
                 armature.root_motion_settings.copy_from_armature(armature)
 
-
 class RM_OT_create_root_motion_setup(OPS_, Operator):
     bl_idname='rm.create_root_motion_setup'
     bl_label = "Create Root Motion Mech Rig"
 
     @classmethod
     def do_poll(cls, context):
-        ao = get_active_unity_object(context)
+        ao = get_unity_target(context)
         if not ao:
             return False        
         s = ao.data.root_motion_settings
@@ -48,38 +47,30 @@ class RM_OT_create_root_motion_setup(OPS_, Operator):
         return True
     
     def do_execute(self, context):
-        bpy.ops.rm.root_motion_settings_to_curves_all()
+        bpy.ops.rm.settings_to_curves_all()
 
-        create_root_motion_setup(context, get_active_unity_object(context))
+        create_root_motion_setup(context, get_unity_target(context))
 
-class RM_OT_rm_curves:
+class RM_OT_common:
     group_name = 'Root Motion Settings'
 
-    @classmethod
-    def do_poll(cls, context):
-        return POLL.data_actions(context)
-
-    def process_action(self, context, action):
+    def generate_root_motion_curves(self, context, armature, action):
         if len(action.unity_clips) != 1:
             return
     
-        obj = get_active_unity_object(context)
-
-        sync_with_scene_mode(context)
-
         clip = action.unity_clips[0]
 
         for ci, fcurve in cspy.iters.reverse_enumerate(action.fcurves):
-            if fcurve.group and fcurve.group.name == self.group_name:
+            if fcurve.group and fcurve.group.name == RM_OT_common.group_name:
                 for ki, key in cspy.iters.reverse_enumerate(fcurve.keyframe_points):
                     fcurve.keyframe_points.remove(key)
                 action.fcurves.remove(fcurve)
                 
-        keys = RootMotionMetadata.root_motion_keys
+        root_motion_keys = RootMotionMetadata.root_motion_keys
 
         updated_paths = []
 
-        for data_path in keys:
+        for data_path in root_motion_keys:
             value = getattr(clip.root_motion, data_path)
             has_length = getattr(value, '__len__', None)
             index_values = []
@@ -91,274 +82,525 @@ class RM_OT_rm_curves:
                 index_values.append((-1, value))
             
             for i, v in index_values:
-                path = data_path
-                if i != -1:
-                    path = '{0}_{1}'.format(data_path, i)
+                base_path = data_path
 
+                is_start = False
+                is_end = False
+                
                 if data_path.endswith('_start'):
-                    path = path.replace('_start', '')
+                    is_start = True
+                    base_path = base_path.replace('_start', '')
                 elif data_path.endswith('_end'):
-                    path = path.replace('_end','')
+                    is_end = True
+                    base_path = base_path.replace('_end','')
+                
+                path = base_path
+                if i != -1:
+                    path = '{0}_{1}'.format(base_path, i)
 
                 updated_paths.append(path)
                 fcurve = action.fcurves.find(path, index=-1)
-                    
+                
                 if not fcurve:
                     fcurve = action.fcurves.new(path, index=-1, action_group=self.group_name)
 
                 if not getattr(bpy.types.Object, path, None):                    
                     setattr(bpy.types.Object, path, bpy.props.FloatProperty(name=path))
 
-                setattr(obj, path, v)
+                setattr(armature, path, v)
 
                 s = clip.frame_start
-                e = clip.frame_end+1
+                e = clip.frame_end
 
-                if data_path.endswith('_start'):
-                    k = cspy.actions.insert_keyframe(fcurve, s, v, needed=False, fast=True)
-                elif data_path.endswith('_end'):
-                    k = cspy.actions.insert_keyframe(fcurve, e, v, needed=False, fast=True)
+                frames = []
+                
+                if is_start:
+                    frames.append(s)
+                elif is_end:
+                    frames.append(e)
                 else:
-                    k = cspy.actions.insert_keyframe(fcurve, s, v, needed=False, fast=True)
-                    k = cspy.actions.insert_keyframe(fcurve, e, v, needed=False, fast=True)
+                    frames.append(s)
+                    frames.append(e)
+                
+                for f in frames:
+                    k = cspy.actions.insert_keyframe(fcurve, f, v, needed=False, fast=True)
+                    k.interpolation = INTERPOLATION.LINEAR
+                
+                if is_end:
+                    blend_key = base_path.replace('rotation', '').replace('location', '').strip('_')
+                
+                    if hasattr(clip.root_motion, '{0}_blend_low'.format(blend_key)):
+                        rm = clip.root_motion
+                        prop_low = '{0}_blend_low'.format(blend_key)
+                        prop_mid = '{0}_blend_mid'.format(blend_key)
+                        prop_high = '{0}_blend_high'.format(blend_key)
+                        
+                        blend_low = getattr(rm, prop_low)
+                        blend_mid = getattr(rm, prop_mid)
+                        blend_high = getattr(rm, prop_high)
+
+                        if blend_low == 0.0 and blend_mid == 0.5 and blend_high == 1.0:
+                            continue
+
+                        duration = e - s
+                        midpoint = s + (duration/2.0)
+                        val_low = fcurve.evaluate(s)
+                        val_mid = fcurve.evaluate(midpoint)
+                        val_high = fcurve.evaluate(e)
+
+                        frame_low = int(s + (blend_low * duration))
+                        frame_mid = int(s + (blend_mid * duration))
+                        frame_high = int(s + (blend_high * duration))
+
+                        if frame_low != s:
+                            k = cspy.actions.insert_keyframe(fcurve, frame_low, val_low, needed=False, fast=True)
+                            k.interpolation = INTERPOLATION.LINEAR
+                        
+                        k = cspy.actions.insert_keyframe(fcurve, frame_mid, val_mid, needed=False, fast=True)
+                        k.interpolation = INTERPOLATION.LINEAR
+                        
+                        if frame_high != e:
+                            k =cspy.actions.insert_keyframe(fcurve, frame_high, val_high, needed=False, fast=True)
+                            k.interpolation = INTERPOLATION.LINEAR
+                        
 
         for data_path in updated_paths:
             fcurve = action.fcurves.find(data_path, index=-1)
             if fcurve is None:
                 continue
             fcurve.update()
+    
+    def print_loc(prefix, loc):
+        string = '[{0}]  x:{1}m,  y:{2}m,  z:{3}m'.format(
+            prefix,
+            loc.x,
+            loc.y, 
+            loc.z)
+        print(string)
 
-class RM_OT_root_motion_settings_to_curves(RM_OT_rm_curves, OPS_, Operator):
+    def print_quat(prefix, quat, order = 'XYZ'):
+        euler = quat.to_euler(order)
+        string = '[{0}]  x:{1},  y:{2},  z:{3}'.format(
+            prefix,
+            math.degrees(euler.x), 
+            math.degrees(euler.y), 
+            math.degrees(euler.z))
+        print(string)
+
+    @classmethod
+    def initiate_poll(cls, context):        
+        c = context
+        s = c.scene
+        has_clips = DOIF.UNITY.TARGET.HAS.SOME_UNITY_CLIPS(c)
+
+        return c, s, has_clips
+
+    def initiate_execute(self, context):        
+        c = context
+        s = c.scene
+        original_frame = s.frame_current
+        s.frame_set(1)        
+
+        armature = get_unity_target(c)
+
+        return c, s, armature, original_frame,
+    
+    def complete_execute(self, context, original_frame):        
+        context.scene.frame_set(original_frame)
+
+class RM_OT_current_clip(RM_OT_common):
+    @classmethod
+    def do_poll(cls, context):
+        c, s, has_clips = cls.initiate_poll(context)
+        return has_clips
+
+    def do_execute(self, context):      
+        c, s, armature, original_frame = self.initiate_execute(context)
+        
+        action, clip, clip_index = get_unity_action_and_clip(context)
+
+        self.sync_clip(context, clip)
+        self.process_clip(c, armature, clip, clip_index) 
+        self.generate_root_motion_curves(context, armature, clip.action)
+
+        self.complete_execute(c, original_frame)
+
+        return {'FINISHED'}
+
+    def get_clips(self, context):
+        action, clip, clip_index = get_unity_action_and_clip(context)
+        return action.unity_clips
+
+    def sync_clip(self, context, clip):        
+        s = context.scene
+        if s.unity_settings.mode == 'SCENE':
+            sync_with = get_action_mode_clip(context, clip)
+        else:
+            sync_with = get_scene_mode_clip(context, clip)
+
+        sync_with_clip(context, clip, sync_with)
+
+class RM_OT_all_clips(RM_OT_common):
+    @classmethod
+    def do_poll(cls, context):
+        c, s, has_clips = cls.initiate_poll(context)
+        return has_clips
+
+    def do_execute(self, context):        
+        c, s, armature, original_frame = self.initiate_execute(context)
+        osi = s.unity_settings.clip_index
+        
+        rms = armature.data.root_motion_settings
+        
+        clips = self.get_clips(c)
+
+        for clip_index in range(len(clips)):            
+            clip = clips[clip_index]
+
+            s.unity_settings.active_action = clip.action
+
+            self.set_clip_index(context, clip, clip_index)
+
+            self.sync_clip(c, clip)
+            self.process_clip(c, armature, clip, clip_index)
+            self.generate_root_motion_curves(context, armature, clip.action)
+        
+        s.unity_settings.clip_index = osi
+        self.complete_execute(c, original_frame)
+        return {'FINISHED'}
+
+    def get_clips(self, context):
+        s = context.scene
+        if s.unity_settings.mode == 'SCENE':
+            return s.all_unity_clips
+        elif s.unity_settings.mode == 'TARGET':
+            return [clip for action in bpy.data.actions for clip in action.unity_clips]
+        else:
+            action, clip, clip_index = get_unity_action_and_clip(context)
+            return action.unity_clips
+
+    def set_clip_index(self, context, clip, clip_index):
+        s = context.scene
+        if s.unity_settings.mode == 'SCENE':
+            s.unity_settings.clip_index = clip_index
+        else:
+            s.active_action.unity_settings.clip_index = clip_index
+
+    def sync_clip(self, context, clip):      
+        s = context.scene
+          
+        if s.unity_settings.mode == 'SCENE':
+            action_clip = get_action_mode_clip(context, clip)
+            sync_with_clip(context, clip, action_clip)
+        else:            
+            scene_clip = get_scene_mode_clip(context, clip)
+            sync_with_clip(context, clip, scene_clip)
+
+class RM_OT_settings_to_curves(RM_OT_current_clip, OPS_, Operator):
     """Adds animation curves for root motion settings."""
-    bl_idname = "rm.root_motion_settings_to_curves"
+    bl_idname = "rm.settings_to_curves"
     bl_label = "To Curves"
 
-    def do_execute(self, context):
-        obj = get_active_unity_object(context)
-        action, clip = get_unity_action_and_clip(context)
+    def process_clip(self, context, armature, clip, clip_index):
+        pass
 
-        if action:
-            self.process_action(context, action)
-
-        return {'FINISHED'}
-
-class RM_OT_root_motion_settings_to_curves_all(RM_OT_rm_curves, OPS_, Operator):
+class RM_OT_settings_to_curves_all(RM_OT_all_clips, OPS_, Operator):
     """Adds animation curves for root motion settings to all actions."""
-    bl_idname = "rm.root_motion_settings_to_curves_all"
+    bl_idname = "rm.settings_to_curves_all"
     bl_label = "To Curves (All)"
 
-    def do_execute(self, context):
-        for action in bpy.data.actions:
-            self.process_action(context, action)
+    def process_clip(self, context, armature, clip, clip_index):
+        pass
 
-        return {'FINISHED'}
+class RM:
+    @classmethod
+    def _get_value_variations(cls, value):
+        options = [
+            value, value.lower(), value.upper(), value.capitalize(), 
+            value.strip('s'), value.lower().strip('s'), value.capitalize().strip('s'), 
+            value + 's', value.lower() + 's', value.capitalize() + 's'
+        ]
+
+        return options
+
+    @classmethod
+    def parse(cls, values, value):
+        options = cls._get_value_variations(value)
+
+        for option in options:
+            if option in values:
+                return option
+        
+        raise ValueError(value)
+        
+    class OPERATION:
+        REST   = 'set_to_rest'
+        CURSOR = 'set_to_cursor'
+        RESET  = 'reset'
+
+        @classmethod
+        def parse(cls, value):
+            return RM.parse([cls.REST, cls.CURSOR, cls.RESET], value)
+
+    class TARGET:
+        ORIGIN = 'origin'
+        SETTINGS = 'settings'
+        ROOT = 'Root'
+        HIPS = 'Hips'
+
+        @classmethod
+        def parse(cls, value):
+            return RM.parse([cls.ORIGIN, cls.SETTINGS, cls.ROOT, cls.HIPS], value)
+
+    class PHASE:
+        START = 'start'
+        END = 'end'
+
+        @classmethod
+        def parse(cls, value):
+            return RM.parse([cls.START, cls.END], value)
+
 
 class RM_OT_options:
     target: bpy.props.StringProperty('Target')
     operation: bpy.props.StringProperty('Operation')
     phase: bpy.props.StringProperty('Phase')
 
-class RM_OT_root_offset:
+    def raise_exception(self, message=''):     
+        prefix = '' if message == '' else '{0}: '.format(message)   
+        raise ValueError('{0}{1}'.format(prefix, ', '.join([self.target, self.operation, self.phase])))
+    
+    def get_options(self):
+        target = RM.TARGET.parse(self.target)        
+        operation = RM.OPERATION.parse(self.operation)
+        phase = RM.PHASE.parse(self.phase)
 
-    def do_execute(self, context):
-        obj = get_active_unity_object(context)
-        action, clip = get_unity_action_and_clip(context)
+        return target, operation, phase
 
-        root_bone_name = obj.data.root_motion_settings.hip_bone_name if self.operation == 'hip_start' or self.operation == 'hip_end' else obj.data.root_motion_settings.root_bone_name
-        bone = obj.pose.bones.get(root_bone_name)
+    def get_current_matrix(self, context, armature, clip):
+        target, operation, phase = self.get_options()
+        rms = armature.data.root_motion_settings
+        rm = clip.root_motion
 
-        self.set_offset(context, obj, action, clip, bone)
-        
-        bpy.ops.rm.root_motion_settings_to_curves()
+        if operation == RM.OPERATION.RESET:            
+            return Matrix.Identity(4)     
 
-        return {'FINISHED'}
-
-def print_loc(prefix, loc):
-    string = '[{0}]  x:{1}m,  y:{2}m,  z:{3}m'.format(
-        prefix,
-        loc.x,
-        loc.y, 
-        loc.z)
-    print(string)
-
-def print_quat(prefix, quat, order = 'XYZ'):
-    euler = quat.to_euler(order)
-    string = '[{0}]  x:{1},  y:{2},  z:{3}'.format(
-        prefix,
-        math.degrees(euler.x), 
-        math.degrees(euler.y), 
-        math.degrees(euler.z))
-    print(string)
-
-class RM_OT_root_motion_reset(RM_OT_root_offset, OPS_, Operator):
-    """Resets the offset property."""
-    bl_idname = "rm.root_offset_to_reset"
-    bl_label = "Reset"
-
-    def set_offset(self, context, armature, action, clip, root_pose_bone):
-        if self.operation == 'start':
-            clip.root_motion.root_node_start_location = [0,0,0]
-            clip.root_motion.root_node_start_rotation = [0,0,0]
+        elif operation == RM.OPERATION.CURSOR:
             
-        elif self.operation == 'settings':
+            if target == RM.TARGET.SETTINGS:
+                self.raise_exception('TARGET')
+            
+            elif target == RM.TARGET.ORIGIN:
+                return rms.root_final.matrix_world
+            
+            elif target == RM.TARGET.ROOT:
+                return rms.root_bone_offset.matrix_world
+            
+            elif target == RM.TARGET.HIPS:
+                return rms.hip_bone_offset.matrix_world
+
+            else:
+                self.raise_exception('TARGET')
+
+        elif operation == RM.OPERATION.REST:
+            
+            if target == RM.TARGET.SETTINGS:
+                self.raise_exception('TARGET')
+            
+            elif target == RM.TARGET.ORIGIN:
+                return rms.root_node.matrix_world
+            
+            elif target == RM.TARGET.ROOT:
+                return get_pose_bone_matrix_world(armature, target)
+            
+            elif target == RM.TARGET.HIPS:
+                return get_pose_bone_matrix_world(armature, target)
+            else:
+                self.raise_exception('TARGET')
+        
+        self.raise_exception()    
+
+    def get_target_matrix(self, context, armature, clip):
+        target, operation, phase = self.get_options()
+        rms = armature.data.root_motion_settings
+        rm = clip.root_motion
+        
+        if operation == RM.OPERATION.RESET:            
+            return Matrix.Identity(4)     
+
+        elif operation == RM.OPERATION.CURSOR:            
+            if target == RM.TARGET.SETTINGS:
+                self.raise_exception('TARGET')
+            
+            elif target == RM.TARGET.ORIGIN:
+                return context.scene.cursor.matrix
+            
+            elif target == RM.TARGET.ROOT:
+                return context.scene.cursor.matrix
+            
+            elif target == RM.TARGET.HIPS:
+                return context.scene.cursor.matrix
+
+            else:
+                self.raise_exception('OPERATION')
+
+        elif operation == RM.OPERATION.REST:            
+            if target == RM.TARGET.SETTINGS:
+                self.raise_exception('TARGET')
+            
+            elif target == RM.TARGET.ORIGIN:
+                return armature.matrix_world
+            
+            elif target == RM.TARGET.ROOT:
+                return get_pose_bone_rest_matrix_world(armature, target)
+            
+            elif target == RM.TARGET.HIPS:
+                return get_pose_bone_rest_matrix_world(armature, target)
+            else:
+                self.raise_exception('TARGET')
+
+        self.raise_exception()
+        
+    def get_matrices(self, context, armature, clip):
+        return self.get_current_matrix(context, armature, clip), self.get_target_matrix(context, armature, clip)
+
+    def get_assignment(self, context, armature, clip):
+        target, operation, phase = self.get_options()
+        rms = armature.data.root_motion_settings
+        rm = clip.root_motion
+
+        if target == RM.TARGET.SETTINGS:
+            self.raise_exception('TARGET')
+
+        elif target == RM.TARGET.ORIGIN:
+            return rm.root_node_start_location, rm.root_node_start_rotation
+
+        elif target == RM.TARGET.ROOT:            
+            if phase == RM.PHASE.START:
+                return rm.root_bone_offset_location_start, rm.root_bone_offset_rotation_start
+            
+            elif phase == RM.PHASE.END:
+                return rm.root_bone_offset_location_end, rm.root_bone_offset_rotation_end
+            
+            else:
+                self.raise_exception('PHASE')
+        
+        elif target == RM.TARGET.HIPS:            
+            if phase == RM.PHASE.START:
+                return rm.hip_bone_offset_location_start, rm.hip_bone_offset_rotation_start
+            
+            elif phase == RM.PHASE.END:
+                return rm.hip_bone_offset_location_end, rm.hip_bone_offset_rotation_end
+            
+            else:
+                self.raise_exception('PHASE')
+        
+        self.raise_exception('TARGET')
+
+    def set_offset(self, context, armature, clip, clip_index):
+        target, operation, phase = self.get_options()
+        rms = armature.data.root_motion_settings
+        rm = clip.root_motion
+
+        if phase == RM.PHASE.START:
+            context.scene.frame_set(clip.frame_start)
+        elif phase == RM.PHASE.END:
+            context.scene.frame_set(clip.frame_end)
+        else:
+            self.raise_exception()
+
+        current_matrix, target_matrix = self.get_matrices(context, armature, clip)
+        
+        current_loc, current_quat,_ = current_matrix.decompose()        
+        target_loc,  target_quat, _ = target_matrix.decompose()
+
+        target_euler = target_quat.to_euler('XYZ')
+
+        diff_loc = target_loc - current_loc
+        diff_rot = current_quat.rotation_difference(target_quat)
+        diff_euler = diff_rot.to_euler('XYZ')
+        inv_diff_rot = target_quat.rotation_difference(current_quat)
+        inv_diff_euler = inv_diff_rot.to_euler('XYZ')
+        
+        set_loc, set_rot = self.get_assignment(context, armature, clip)
+        
+        if operation == RM.OPERATION.RESET:
+            set_loc.x, set_loc.y, set_loc.z = target_loc.x, target_loc.y, target_loc.z
+            set_rot.x, set_rot.y, set_rot.z = target_euler.x, target_euler.y, target_euler.z
+
+        elif operation == RM.OPERATION.CURSOR:
+            set_loc += diff_loc
+
+        elif operation == RM.OPERATION.REST:
+            if target == RM.TARGET.ROOT:
+                #set_loc += diff_loc
+                #set_rot.rotate(diff_euler)
+                set_loc.x, set_loc.y, set_loc.z = diff_loc.x, diff_loc.y, diff_loc.z
+                set_rot.x, set_rot.y, set_rot.z = diff_euler.x, diff_euler.y, diff_euler.z
+
+            elif target == RM.TARGET.HIPS:
+                set_loc += diff_loc
+                set_rot.rotate(diff_euler)
+            
+            elif target == RM.TARGET.ORIGIN:
+                set_loc += diff_loc
+                set_rot.rotate(diff_euler)
+
+            else:
+                self.raise_exception()
+        else:
+            self.raise_exception()       
+
+        clip.root_motion.update_disabled = False
+
+
+class RM_OT_set_offset(RM_OT_options, RM_OT_current_clip, OPS_, Operator):
+    """Sets the root motion offset in the specified manner."""
+    bl_idname = "rm.set_offset"
+    bl_label = "RM: Set Offset"
+
+    def process_clip(self, context, armature, clip, clip_index):
+        target, operation, phase = self.get_options()
+
+        if target == RM.TARGET.SETTINGS:
             clip.root_motion.root_motion_x_offset = 0
             clip.root_motion.root_motion_y_offset = 0
             clip.root_motion.root_motion_z_offset = 0
             clip.root_motion.root_motion_rot_offset = 0
-            
-        elif self.operation == 'root_start':
-            clip.root_motion.root_bone_offset_location_start = [0,0,0]
-            clip.root_motion.root_bone_offset_rotation_start = [0,0,0]
-            
-        elif self.operation == 'hip_start':
-            clip.root_motion.hip_bone_offset_location_start = [0,0,0]
-            clip.root_motion.hip_bone_offset_rotation_start = [0,0,0]
-            
-        elif self.operation == 'root_end':
-            clip.root_motion.root_bone_offset_location_end = [0,0,0]
-            clip.root_motion.root_bone_offset_rotation_end = [0,0,0]
-            
-        elif self.operation == 'hip_end':
-            clip.root_motion.hip_bone_offset_location_end = [0,0,0]
-            clip.root_motion.hip_bone_offset_rotation_end = [0,0,0]
-            
-
-class RM_OT_root_motion_set:
-    def set_offset(self, context, armature, action, clip, pose_bone):
-        pose_matrix, rest_matrix = self.get_matrices(context, armature, action, clip, pose_bone)
-            
-        pose_loc,pose_quat,_ = pose_matrix.decompose()
-        rest_loc,rest_quat,_ = rest_matrix.decompose()
-
-        diff_loc = rest_loc - pose_loc
-
-        diff_rot = pose_quat.rotation_difference(rest_quat)
-        diff_euler = diff_rot.to_euler('XYZ')
-
-        set_loc, set_rot = clip.root_motion.root_node_start_location, clip.root_motion.root_node_start_rotation
-
-        if self.operation == 'root_start':
-            set_loc, set_rot = clip.root_motion.root_bone_offset_location_start, clip.root_motion.root_bone_offset_rotation_start
-        elif self.operation == 'hip_start':
-            set_loc, set_rot = clip.root_motion.hip_bone_offset_location_start, clip.root_motion.hip_bone_offset_rotation_start
-        if self.operation == 'root_end':
-            set_loc, set_rot = clip.root_motion.root_bone_offset_location_end, clip.root_motion.root_bone_offset_rotation_end
-        elif self.operation == 'hip_end':
-            set_loc, set_rot = clip.root_motion.hip_bone_offset_location_end, clip.root_motion.hip_bone_offset_rotation_end
-        
-        set_loc[0] = diff_loc[0]
-        set_loc[1] = diff_loc[1]
-        set_loc[2] = diff_loc[2]
-        
-        set_rot[0] = diff_euler.x
-        set_rot[1] = diff_euler.y
-        set_rot[2] = diff_euler.z
-
-class RM_OT_root_motion_rest(RM_OT_root_motion_set, RM_OT_root_offset, OPS_, Operator):
-    """Sets the root motion offset to return the root to its rest position."""
-    bl_idname = "rm.root_offset_to_rest"
-    bl_label = "To Rest"
-
-    def  get_matrices(self, context, armature, action, clip, pose_bone):
-        if self.operation == 'start':
-            pose_matrix = armature.data.root_motion_settings.root_node.matrix_world
-            rest_matrix = armature.matrix_world
-        elif self.operation == 'root_start' or self.operation == 'root_end':
-            pose_matrix = get_pose_bone_matrix_world(armature, pose_bone.name)
-            rest_matrix = get_pose_bone_rest_matrix_world(armature, pose_bone.name)
-        elif self.operation == 'hip_start' or self.operation == 'hip_end':
-            pose_matrix = get_pose_bone_matrix_world(armature, pose_bone.name)
-            rest_matrix = get_pose_bone_rest_matrix_world(armature, pose_bone.name)
-
-        return pose_matrix, rest_matrix
-
-class RM_OT_root_motion_cursor(RM_OT_root_motion_set, RM_OT_root_offset, OPS_, Operator):
-    """Sets the root motion offset to return the root to the cursor."""
-    bl_idname = "rm.root_offset_to_cursor"
-    bl_label = "To Cursor"
-
-    def  get_matrices(self, context, armature, action, clip, pose_bone):
-
-        if self.operation == 'start':
-            pose_matrix = armature.data.root_motion_settings.root_node.matrix_world
-        elif self.operation == 'root_start' or self.operation == 'root_end':
-            pose_matrix = armature.data.root_motion_settings.root_bone_offset.matrix_world
-        elif self.operation == 'hip_start' or self.operation == 'hip_end':
-            pose_matrix = armature.data.root_motion_settings.hip_bone_offset.matrix_world
-
-        cursor = context.scene.cursor
-        rest_matrix = cursor.matrix
-
-        return pose_matrix, rest_matrix
-            
-
-class RM_OT_root_motion_scene:
-
-    operation: bpy.props.StringProperty('Operation')
-
-    @classmethod
-    def do_poll(cls, context):
-        return context.scene.unity_settings.mode == 'SCENE'
-        
-    def do_execute(self, context):        
-        armature = get_active_unity_object(context)
-        original_action, original_clip = get_unity_action_and_clip(context)
-
-        root_bone_name = armature.data.root_motion_settings.hip_bone_name if self.operation == 'hip_start' or self.operation == 'hip_end' else armature.data.root_motion_settings.root_bone_name
-        bone = armature.pose.bones.get(root_bone_name)
-
-        context.scene.frame_set(1)
-        scene = context.scene
-        clips = scene.all_unity_clips
-
-        for index in range(len(clips)):
-            clip = clips[index]
-            action = clip.action
-
-            self.process_clip(context, armature, action, clip, index, bone)
-        
-        return {'FINISHED'}
+        else:
+            self.set_offset(context, armature, clip, clip_index)
 
 
-class RM_OT_root_motion_rest_all(RM_OT_root_motion_scene, RM_OT_root_motion_set, OPS_, Operator):
+class RM_OT_set_offset_all(RM_OT_options, RM_OT_all_clips, OPS_, Operator):
     """Sets the root motion offset to return the root to its rest position for all scene clips."""
-    bl_idname = "rm.root_offset_to_rest_all"
-    bl_label = "To Rest (All)"
+    bl_idname = "rm.set_offset_all"
+    bl_label = "RM: To Rest (All)"
     
-    operation: bpy.props.StringProperty('Operation')
-    def process_clip(self, context, armature, action, clip, index, pose_bone):
+    def process_clip(self, context, armature, clip, clip_index):
+        self.set_offset(context, armature, clip, clip_index)
 
-        apply_clip_by_index(context, index)
-        
-        self.set_offset(context, armature, action, clip, pose_bone)
-    
-    def get_matrices(self, context, armature, action, clip, pose_bone):
 
-        pose_matrix = armature.data.root_motion_settings.root_node.matrix_world
-        rest_matrix = armature.matrix_world
-         
-        return pose_matrix, rest_matrix
-            
-class RM_OT_root_motion_push_rotation_offsets_all(RM_OT_root_motion_scene, OPS_, Operator):
-
+class RM_OT_push_rotation_offsets(RM_OT_current_clip, OPS_, Operator):
     """Pushes rotation offsets to be applied to the root and hip bones for correction."""
-    bl_idname = "rm.root_motion_push_rotation_offsets_all"
-    bl_label = "Push Rotation Offsets"
+    bl_idname = "rm.push_rotation_offsets"
+    bl_label = "RM: Push Rotation Offset"
+    bl_icon = cspy.icons.CON_ROTLIKE
 
-    def process_clip(self, context, armature, action, clip, index, pose_bone):
-        
+    def process_clip(self, context, armature, clip, index):        
         r = math.radians(clip.root_motion.root_motion_rot_offset)
         clip.root_motion.root_bone_offset_rotation_start.z = r
         clip.root_motion.root_bone_offset_rotation_end.z = r
         clip.root_motion.hip_bone_offset_rotation_start.z = r
         clip.root_motion.hip_bone_offset_rotation_end.z = r
 
-class RM_OT_root_motion_push_location_offsets_all(RM_OT_root_motion_scene, OPS_, Operator):
-    """Pushes location offsets to be applied to the root and hip bones for correction."""
-    bl_idname = "rm.root_motion_push_location_offsets_all"
-    bl_label = "Push Location Offsets"
 
-    def process_clip(self, context, armature, action, clip, index, pose_bone):
+class RM_OT_push_location_offsets(RM_OT_current_clip, OPS_, Operator):
+    """Pushes location offsets to be applied to the root and hip bones for correction."""
+    bl_idname = "rm.push_location_offsets"
+    bl_label = "RM: Push Location Offset"
+    bl_icon = cspy.icons.CON_LOCLIKE
+
+    def process_clip(self, context, armature, clip, index):
         rm = clip.root_motion
 
         rm.hip_bone_offset_location_start.x = rm.root_node_start_location.x
@@ -366,3 +608,73 @@ class RM_OT_root_motion_push_location_offsets_all(RM_OT_root_motion_scene, OPS_,
         rm.hip_bone_offset_location_end.x = rm.root_node_start_location.x
         rm.hip_bone_offset_location_end.y = rm.root_node_start_location.y
 
+class RM_OT_push_rotation_offsets_all(RM_OT_all_clips, OPS_, Operator):
+    """Pushes rotation offsets to be applied to the root and hip bones for correction."""
+    bl_idname = "rm.push_rotation_offsets_all"
+    bl_label = "RM: Push Rotation Offsets (All)"
+    bl_icon = cspy.icons.CON_ROTLIKE
+
+    def process_clip(self, context, armature, clip, index):        
+        r = math.radians(clip.root_motion.root_motion_rot_offset)
+        clip.root_motion.root_bone_offset_rotation_start.z = r
+        clip.root_motion.root_bone_offset_rotation_end.z = r
+        clip.root_motion.hip_bone_offset_rotation_start.z = r
+        clip.root_motion.hip_bone_offset_rotation_end.z = r
+
+
+class RM_OT_push_location_offsets_all(RM_OT_all_clips, OPS_, Operator):
+    """Pushes location offsets to be applied to the root and hip bones for correction."""
+    bl_idname = "rm.push_location_offsets_all"
+    bl_label = "RM: Push Location Offsets (All)"
+    bl_icon = cspy.icons.CON_LOCLIKE
+
+    def process_clip(self, context, armature, clip, index):
+        rm = clip.root_motion
+
+        rm.hip_bone_offset_location_start.x = rm.root_node_start_location.x
+        rm.hip_bone_offset_location_start.y = rm.root_node_start_location.y
+        rm.hip_bone_offset_location_end.x = rm.root_node_start_location.x
+        rm.hip_bone_offset_location_end.y = rm.root_node_start_location.y
+
+class RM_OT_reset_offsets_all(RM_OT_all_clips, OPS_, Operator):
+    """Resets all offsets."""
+    bl_idname = "rm.reset_offsets_all"
+    bl_label = "RM: Reset All Offsets"
+    bl_icon = cspy.icons.CANCEL
+
+    def process_clip(self, context, armature, clip, index):
+        rm = clip.root_motion
+        
+        rm.root_node_start_location = [0, 0, 0]
+        rm.root_node_start_rotation = [0, 0, 0]
+        rm.root_bone_offset_location_start = [0, 0, 0]
+        rm.root_bone_offset_location_end = [0, 0, 0]
+        rm.hip_bone_offset_location_start  = [0, 0, 0]
+        rm.hip_bone_offset_location_end = [0, 0, 0]
+        rm.root_bone_offset_rotation_start = [0, 0, 0]
+        rm.root_bone_offset_rotation_end = [0, 0, 0]
+        rm.hip_bone_offset_rotation_start  = [0, 0, 0]
+        rm.hip_bone_offset_rotation_end = [0, 0, 0]
+
+class RM_OT_refresh_childof_constraints(RM_OT_current_clip, OPS_, Operator):
+    """Refreshes the childof matrices for root motion mech devices."""
+    bl_idname = "rm.refresh_childof_constraints"
+    bl_label = "RM: Refresh Child Of Constraint Matrices"
+    bl_icon = cspy.icons.CON_CHILDOF
+    
+    def process_clip(self, context, armature, clip, index):
+        collection = 'Root Motion'
+
+        restore_pose_position = in_pose_position(armature)
+        
+        to_rest_position(armature)
+        all_objects = reversed(cspy.hierarchy.get_collection_hierarchy(collection))
+
+        for obj in all_objects:
+            for constraint in obj.constraints:
+                if constraint.type == 'CHILD_OF':
+                    constraint.inverse_matrix = constraint.target.matrix_world.inverted()
+                    print('{0}: {1} consstraint matrix reset.'.format(obj.name, constraint.name))
+
+        if restore_pose_position:
+            to_pose_position(armature)

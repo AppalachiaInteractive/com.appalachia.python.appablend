@@ -16,7 +16,10 @@ def enter_mode(new_active_object, new_mode, unselect_current=True):
     previous_active_object = bpy.context.view_layer.objects.active
     previous_active_object_mode = bpy.context.mode if not previous_active_object else previous_active_object.mode
 
-    new_active_object_mode = new_active_object.mode
+    new_active_object_mode = new_mode
+    
+    if new_active_object:
+        new_active_object_mode = new_active_object.mode
 
     if previous_active_object and previous_active_object != new_active_object and unselect_current:
         if bpy.context.mode != 'OBJECT':
@@ -25,7 +28,8 @@ def enter_mode(new_active_object, new_mode, unselect_current=True):
 
     new_active_object.select_set(True)
 
-    new_active_object_mode = new_active_object.mode
+    if new_active_object:
+        new_active_object_mode = new_active_object.mode
 
     if previous_active_object != new_active_object:
         bpy.context.view_layer.objects.active = new_active_object
@@ -41,7 +45,7 @@ def exit_mode(new_active_object, new_mode, unselect_current=True):
     previous_active_object = bpy.context.view_layer.objects.active
     previous_active_object_mode = previous_active_object.mode
 
-    print('Exiting {0} ({1}). Returning to {2} ({3})'.format(previous_active_object_mode, previous_active_object.name, new_mode, new_active_object.name))
+    print('Exiting {0} ({1}). Returning to {2} ({3})'.format(previous_active_object_mode, 'NONE' if not previous_active_object else previous_active_object.name, new_mode, 'NONE' if not new_active_object else new_active_object.name))
 
     new_active_object_mode = new_active_object.mode
 

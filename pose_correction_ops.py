@@ -2,7 +2,7 @@ import bpy
 from bpy.types import Operator
 import cspy
 from cspy.ops import *
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.bones import *
 from cspy.pose_correction import *
 from cspy.actions import *
@@ -10,7 +10,7 @@ from cspy.actions import *
 class PC_OP:
     @classmethod
     def do_poll(cls, context):
-        return POLL.mode_POSE(context) and POLL.active_pose_bone(context)
+        return DOIF.MODE.IS_POSE(context) and DOIF.ACTIVE.POSE_BONE(context)
 
     def do_execute(self, context):
         bone = context.active_pose_bone
@@ -104,8 +104,8 @@ class PC_OT_correct_pose:
 
     @classmethod
     def do_poll(cls, context):
-        first = (POLL.mode_POSE(context) and
-                POLL.active_pose_bone(context) and
+        first = (DOIF.MODE.IS_POSE(context) and
+                DOIF.ACTIVE.POSE_BONE(context) and
                 context.scene.frame_current >= context.scene.frame_start and
                 context.scene.frame_current <= context.scene.frame_end)
 

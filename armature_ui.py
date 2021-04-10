@@ -1,7 +1,7 @@
 
 import bpy
 import cspy
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.armature import *
 from cspy.armature_ops import *
@@ -13,7 +13,7 @@ class VIEW_3D_PT_UI_Tool_Armature(bpy.types.Panel, PT_, UI.VIEW_3D.UI.Tool):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_ARMATURE(context)
+        return DOIF.ACTIVE.TYPE.IS_ARMATURE(context)
 
     def do_draw(self, context, scene, layout, obj):
 

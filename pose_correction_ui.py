@@ -1,5 +1,5 @@
 from cspy.ui import PT_OPTIONS, PT_, UI
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.bones_ops import *
 from cspy.bones import *
 from cspy.pose_correction import *
@@ -9,7 +9,7 @@ from cspy.timeline_ops import *
 class _PT_PC_:
     @classmethod
     def do_poll(cls, context):
-        return POLL.mode_POSE(context)
+        return DOIF.MODE.IS_POSE(context)
 
 class VIEW_3D_PT_Pose_Correction(_PT_PC_, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
     bl_label = "Pose Correction"
@@ -27,7 +27,7 @@ class VIEW_3D_PT_Pose_Correction(_PT_PC_, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Pan
 class _PT_PC_AB:
     @classmethod
     def do_poll(cls, context):
-        return POLL.mode_POSE(context) and POLL.active_pose_bone(context)
+        return DOIF.MODE.IS_POSE(context) and DOIF.ACTIVE.POSE_BONE(context)
     
     def do_draw(self, context, scene, layout, obj):
         arm = context.active_object
@@ -99,7 +99,7 @@ class _PT_PC_AB:
 
     def draw_influence(self, layout, valid, alerting, pose_correction, prop_name):
         row = layout.row(align=True)
-        row.prop(pose_correction, prop_name)
+        row.prop(pose_correction, prop_name, slider=True)
         row.operator(PC_OT_insert_anchor_keyframe.bl_idname)
 
         row = layout.row(align=True)

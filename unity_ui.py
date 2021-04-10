@@ -2,9 +2,10 @@ import cspy
 from cspy.unity import *
 from cspy.unity_ops import *
 from cspy.unity_ul import *
+from cspy.unity_scene import *
 from cspy.timeline_ops import *
 from cspy.ui import PT_OPTIONS, PT_, UI
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy import subtypes
 
 class UNITY_PANEL:
@@ -13,11 +14,11 @@ class UNITY_PANEL:
 
     @classmethod
     def do_poll(cls, context):
-        return True# POLL.active_unity_object(context)
+        return True# DOIF.UNITY.TARGET.SET(context)
 
         
     def do_draw(self, context, scene, layout, obj):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         unity_settings = scene.unity_settings
 
         col = layout.column(align=True)
@@ -35,7 +36,7 @@ class UNITY_PANEL:
         row.prop(unity_settings, 'draw_keyframes', toggle=True, text='', icon=unity_settings.icon_keys)
         row.prop(unity_settings, 'draw_clips', toggle=True, text='', icon=unity_settings.icon_clips)
         
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
 
         if obj:
             row.separator()
@@ -44,31 +45,31 @@ class UNITY_PANEL:
 class CLIP_SUBPANEL_REQ():
     @classmethod
     def subpanel_poll(cls, context):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         return (
-                POLL.active_unity_object(context) and 
-                (POLL.unity_mode_SCENE(context) or obj is not None)
+                DOIF.UNITY.TARGET.SET(context) and 
+                (DOIF.UNITY.MODE.SCENE(context) or obj is not None)
             )
 
     def do_draw(self, context, scene, layout, obj):
-        obj = get_active_unity_object(context)
-        action, unity_clip = get_unity_action_and_clip(context)
+        obj = get_unity_target(context)
+        action, clip, clip_index = get_unity_action_and_clip(context)
 
-        if action is None or unity_clip is None:
+        if action is None or clip is None:
             return
 
-        self.finish_draw(context, scene, layout, obj, action, unity_clip)
+        self.finish_draw(context, scene, layout, obj, action, clip)
 
 class CLIP_SUBPANEL():
     @classmethod
     def subpanel_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
     def do_draw(self, context, scene, layout, obj):
-        obj = get_active_unity_object(context)
-        action, unity_clip = get_unity_action_and_clip(context)
+        obj = get_unity_target(context)
+        action, clip, clip_index = get_unity_action_and_clip(context)
 
-        self.finish_draw(context, scene, layout, obj, action, unity_clip)
+        self.finish_draw(context, scene, layout, obj, action, clip)
 
 class VIEW_3D_PT_UI_Tool_Unity(UNITY_PANEL, UI.VIEW_3D.UI.Tool, PT_, bpy.types.Panel):
     bl_idname = "VIEW_3D_PT_UI_Tool_Unity"
@@ -82,10 +83,10 @@ class _PT_Unity_000_Sheets():
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context) and context.scene.unity_settings.draw_sheets
+        return DOIF.UNITY.TARGET.SET(context) and context.scene.unity_settings.draw_sheets
 
     def do_draw(self, context, scene, layout, obj):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         layout.prop(scene.unity_settings, 'sheet_dir_path')
         row = layout.row(align=True)
         row.operator(UNITY_OT_refresh_clip_data.bl_idname)
@@ -100,7 +101,7 @@ class _PT_Unity_000_Sheets():
         if obj and obj.animation_data and obj.animation_data.action:
             row = layout.row(align=True)
             a = obj.animation_data.action
-            row.prop(a.unity_metadata, 'unity_clip_template')
+            row.prop(a.unity_metadata, 'clip_template')
             row.operator(UNITY_OT_copy_clips_from_template.bl_idname)
 
 class _PT_Unity_003_Keys():
@@ -109,10 +110,10 @@ class _PT_Unity_003_Keys():
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context) and context.scene.unity_settings.draw_keyframes
+        return DOIF.UNITY.TARGET.SET(context) and context.scene.unity_settings.draw_keyframes
 
     def do_draw(self, context, scene, layout, obj):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         layout.prop(scene.unity_settings, 'key_dir_path')
         row = layout.row(align=True)
         row.operator(UNITY_OT_refresh_key_data.bl_idname)
@@ -128,13 +129,13 @@ class _PT_Unity_Clips_Ops:
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.active_unity_object(context)
+        return DOIF.UNITY.TARGET.SET(context)
 
     def do_draw(self, context, scene, layout, obj):
 
-        action, unity_clip = get_unity_action_and_clip(context)
+        action, clip, clip_index = get_unity_action_and_clip(context)
 
-        if action is None or unity_clip is None:
+        if action is None or clip is None:
             return
 
         col = layout.column(align=True)
@@ -152,8 +153,8 @@ class _PT_Unity_Clips_Ops:
         sf = context.scene.frame_current
         ss = context.scene.frame_start
         se = context.scene.frame_end
-        s = unity_clip.frame_start
-        e = unity_clip.frame_end
+        s = clip.frame_start
+        e = clip.frame_end
 
         row.enabled = ss != s or se != e
         row.alert = row.enabled
@@ -164,13 +165,13 @@ class _PT_Unity_Clips_Ops:
         row2.enabled = sf < s or sf < e
         set_button = row2.operator(UNITY_OT_Set_By_Current_Frame.bl_idname)
 
-        if unity_clip and unity_clip.action:
-            play_button.action_name = unity_clip.action.name
-            play_button.clip_name = unity_clip.name
-            clamp_button.action_name = unity_clip.action.name
-            clamp_button.clip_name = unity_clip.name
-            set_button.action_name = unity_clip.action.name
-            set_button.clip_name = unity_clip.name
+        if clip and clip.action:
+            play_button.action_name = clip.action.name
+            play_button.clip_name = clip.name
+            clamp_button.action_name = clip.action.name
+            clamp_button.clip_name = clip.name
+            set_button.action_name = clip.action.name
+            set_button.clip_name = clip.name
 
 
         row = col.row(align=True)
@@ -189,7 +190,7 @@ class _PT_Unity_005_All_Clips(_PT_Unity_Clips_List):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.unity_mode_SCENE(context) and POLL.active_unity_object(context) and context.scene.unity_settings.draw_clips
+        return DOIF.UNITY.MODE.SCENE(context) and DOIF.UNITY.TARGET.SET(context) and context.scene.unity_settings.draw_clips
 
     def draw_template_list(self, context, layout):
         scene = context.scene
@@ -206,14 +207,14 @@ class _PT_Unity_010_Clips(_PT_Unity_Clips_List):
 
     @classmethod
     def do_poll(cls, context):
-        return (not POLL.unity_mode_SCENE(context)) and POLL.active_unity_object(context) and context.scene.unity_settings.draw_clips
+        return (not DOIF.UNITY.MODE.SCENE(context)) and DOIF.UNITY.TARGET.SET(context) and context.scene.unity_settings.draw_clips
 
     def draw_template_list(self, context, layout):
-        obj = get_active_unity_object(context)
+        obj = get_unity_target(context)
         action = obj.animation_data.action
         rows = min(max(1, len(action.unity_clips)), 5)
 
-        layout.template_list("UNITY_UL_UnityClips", "", action, "unity_clips", action.unity_metadata, "clip_index", rows=rows)
+        layout.template_list("UNITY_UL_UnityClips", "", action, "clips", action.unity_metadata, "clip_index", rows=rows)
 
 class _PT_Unity_010_Clips_000_Ops(_PT_Unity_Clips_Ops):
     bl_icon =  UnitySettings.icon_operations
@@ -225,19 +226,19 @@ class _PT_Unity_020_Clip():
 
     @classmethod
     def do_poll(cls, context):
-        obj = get_active_unity_object(context)
-        anim_data = POLL.active_unity_object(context)
-        return ( anim_data and (POLL.unity_mode_SCENE(context) or (obj and obj.animation_data and obj.animation_data.action)))
+        obj = get_unity_target(context)
+        anim_data = DOIF.UNITY.TARGET.SET(context)
+        return ( anim_data and (DOIF.UNITY.MODE.SCENE(context) or (obj and obj.animation_data and obj.animation_data.action)))
 
     def finish_header(self, context, scene, layout, obj):
-        obj = get_active_unity_object(context)
-        action, unity_clip = get_unity_action_and_clip(context)
-        if action is None or unity_clip is None:
+        obj = get_unity_target(context)
+        action, clip, clip_index = get_unity_action_and_clip(context)
+        if action is None or clip is None:
             return
 
         row = layout.row(align=True)
 
-        row.label(text=unity_clip.name)
+        row.label(text=clip.name)
 
         r2 = row.split()
 
@@ -262,31 +263,31 @@ class _PT_Unity_020_Clip_000_Metadata(CLIP_SUBPANEL_REQ):
     def do_poll(cls, context):
         return cls.subpanel_poll(context) and context.scene.unity_settings.draw_metadata
 
-    def finish_draw(self, context, scene, layout, obj, action, unity_clip):
-        obj = get_active_unity_object(context)
+    def finish_draw(self, context, scene, layout, obj, action, clip):
+        obj = get_unity_target(context)
         box = layout.box()
         col = box.column(align=True)
         row = col.row(align=True)
 
         row_1 = row.split()
         row_1.enabled = False
-        row_1.prop(unity_clip, 'action')
+        row_1.prop(clip, 'action')
 
         row_2 = row.split()
         row_2.operator(UNITY_OT_sync_actions_with_clips.bl_idname, text='Sync')
-        row_2.enabled = (unity_clip.action != unity_clip.id_data)
+        row_2.enabled = (clip.action != clip.id_data)
 
         row_3 = col.row(align=True)
         row_3.enabled = False
-        row_3.prop(unity_clip, 'fbx_name')
+        row_3.prop(clip, 'fbx_name')
 
         row_4 = col.row(align=True)
         row_4a = row_4.split()
-        row_4a.prop(unity_clip, 'name')
-        row_4a.enabled = unity_clip.can_edit
+        row_4a.prop(clip, 'name')
+        row_4a.enabled = clip.can_edit
 
         row_4b = row_4.split()
-        row_4b.prop(unity_clip, 'can_edit', toggle=True, text='', icon=cspy.icons.UNLOCKED)
+        row_4b.prop(clip, 'can_edit', toggle=True, text='', icon=cspy.icons.UNLOCKED)
         row_4b.enabled = True
 
 class _PT_Unity_020_Clip_020_Frames(CLIP_SUBPANEL_REQ):
@@ -297,20 +298,20 @@ class _PT_Unity_020_Clip_020_Frames(CLIP_SUBPANEL_REQ):
     def do_poll(cls, context):
         return cls.subpanel_poll(context) and context.scene.unity_settings.draw_frames
 
-    def finish_draw(self, context, scene, layout, obj, action, unity_clip):
-        obj = get_active_unity_object(context)
+    def finish_draw(self, context, scene, layout, obj, action, clip):
+        obj = get_unity_target(context)
         box = layout.box()
         col = box.column(align=True)
 
         row = col.row(align=True)
         row1 = row.split()
         #row1.alignment = 'LEFT'
-        row1.prop(unity_clip, 'frame_start', text='Start')
-        row1.prop(unity_clip, 'frame_end', text='Stop')
+        row1.prop(clip, 'frame_start', text='Start')
+        row1.prop(clip, 'frame_end', text='Stop')
         row2 = row.split()
         row2.separator()
         #row2.alignment = 'RIGHT'
-        row2.prop(unity_clip, 'loop_time', text='Loop?')
+        row2.prop(clip, 'loop_time', text='Loop?')
 
 class _PT_Unity_020_Clip_040_Operation(CLIP_SUBPANEL_REQ):
     bl_icon =  UnitySettings.icon_operation
@@ -320,8 +321,8 @@ class _PT_Unity_020_Clip_040_Operation(CLIP_SUBPANEL_REQ):
     def do_poll(cls, context):
         return cls.subpanel_poll(context) and context.scene.unity_settings.draw_operations
 
-    def finish_draw(self, context, scene, layout, obj, action, unity_clip):
-        obj = get_active_unity_object(context)
+    def finish_draw(self, context, scene, layout, obj, action, clip):
+        obj = get_unity_target(context)
         box = layout.box()
         col = box.column(align=True)
 

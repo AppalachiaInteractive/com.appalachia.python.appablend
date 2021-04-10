@@ -1,7 +1,7 @@
 import bpy, cspy
 from bpy.types import Operator
 from cspy.ops import OPS_, OPS_DIALOG
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.nla import *
 from cspy.unity_clips import *
 from cspy.root_motion import *
@@ -13,7 +13,7 @@ class NLA_OT_actions_to_strip(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return len(bpy.data.actions) > 0
+        return DOIF.DATA.ACTIONS(context)
 
     def do_execute(self, context):
         obj = context.active_object
@@ -40,7 +40,7 @@ class NLA_OT_strips_from_clips(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return len(bpy.data.actions) > 0
+        return DOIF.DATA.ACTIONS(context)
 
     def do_execute(self, context):
         obj = context.active_object
@@ -78,7 +78,7 @@ class NLA_OT_strips_from_text(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        return len(bpy.data.actions) > 0
+        return DOIF.DATA.ACTIONS(context)
 
     def do_execute(self, context):
         obj = context.active_object

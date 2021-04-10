@@ -51,3 +51,8 @@ def remove_child_relations(context, parent, clear_type='CLEAR_KEEP_TRANSFORM'):
     context.view_layer.objects.active = active_object
 
     return child_objects
+
+def get_collection_hierarchy(collection):
+    c = bpy.data.collections.get(collection)
+
+    return c.all_objects

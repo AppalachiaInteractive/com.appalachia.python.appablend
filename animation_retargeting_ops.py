@@ -1,7 +1,7 @@
 import bpy, cspy
 from bpy.types import Operator
 from cspy.ops import OPS_, OPS_DIALOG
-from cspy.polling import POLL
+from cspy.polling import DOIF
 from cspy.ui import PT_OPTIONS, PT_, UI
 from cspy.animation_retargeting import *
 
@@ -183,7 +183,7 @@ class AR_OPS_Create_New_Constraint(AR_OPS_,OPS_):
 
     @classmethod
     def do_poll(cls, context):
-        return POLL.ANIM_RET_IS_NOT_FROZEN(context)
+        return DOIF.ANIM_RET.IS_NOT_FROZEN(context)
 
     def do_execute(self, context):
         obj = context.active_object

@@ -10,11 +10,11 @@ class AM_OT_check_properties(OPS_, Operator):
 
     @classmethod
     def do_poll(cls, context):
-        action, clip = get_unity_action_and_clip(context)
+        action, clip, clip_index = get_unity_action_and_clip(context)
         return action
 
     def do_execute(self, context):
-        action, clip = get_unity_action_and_clip(context)
+        action, clip, clip_index = get_unity_action_and_clip(context)
 
         first = action.frame_range[0]
         end = action.frame_range[1]
