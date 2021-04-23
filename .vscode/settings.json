@@ -1,3 +1,8 @@
 {
-    "python.formatting.provider": "black"
+    "python.formatting.provider": "black",
+    "python.pythonPath": ".venv\\Scripts\\python.exe",
+    "python.analysis.extraPaths": [
+        "appablend",
+        "C:\\Program Files\\Blender Foundation\\Blender 2.91\\2.91\\scripts\\modules"
+    ]
 }
