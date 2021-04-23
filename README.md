@@ -1,20 +1,17 @@
+# appablend for Blender
 ```text
-           ,ggg,                                     ,ggggggggggg,            
-          dP""8I                                    dP"""88""""""Y8,          
-         dP   88                                    Yb,  88      `8b          
-        dP    88                                     `"  88      ,8P          
-       ,8'    88                                         88aaaad8P"           
-       d88888888   gg,gggg,    gg,gggg,      ,gggg,gg    88"""""    gg     gg 
- __   ,8"     88   I8P"  "Yb   I8P"  "Yb    dP"  "Y8I    88         I8     8I 
-dP"  ,8P      Y8   I8'    ,8i  I8'    ,8i  i8'    ,8I    88         I8,   ,8I 
-Yb,_,dP       `8b,,I8 _  ,d8' ,I8 _  ,d8' ,d8,   ,d8b,   88        ,d8b, ,d8I 
- "Y8P"         `Y8PI8 YY88888PPI8 YY88888PP"Y8888P"`Y8   88        P""Y88P"888
-                   I8          I8                                        ,d8I'
-                   I8          I8                                      ,dP'8I 
-                   I8          I8                                     ,8"  8I 
-                   I8          I8                                     I8   8I 
-                   I8          I8                                     `8, ,8I 
-                   I8          I8                                      `Y8P"  
+      .oooo.   oo.ooooo.  oo.ooooo.   .oooo.
+     `P  )88b   888' `88b  888' `88b `P  )88b
+      .oP"888   888   888  888   888  .oP"888
+     d8(  888   888   888  888   888 d8(  888
+     `Y888""8o  888bod8P'  888bod8P' `Y888""8o
+ .o8       oooo 888        888               .o8
+"888       `888o888o      o888o             "888
+ 888oooo.   888   .ooooo.  ooo. .oo.    .oooo888
+ d88' `88b  888  d88' `88b `888P"Y88b  d88' `888
+ 888   888  888  888ooo888  888   888  888   888
+ 888   888  888  888    .o  888   888  888   888
+ `Y8bod8P' o888o `Y8bod8P' o888o o888o `Y8bod88P"
 ```
 
 # appablend
