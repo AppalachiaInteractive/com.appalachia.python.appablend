@@ -29,6 +29,7 @@ from appablend import pose_correction
 from appablend import retargeting
 from appablend import rigify
 from appablend import root_motion
+from appablend import textures
 from appablend import timeline
 from appablend import unity
 
@@ -397,6 +398,10 @@ from appablend.root_motion import (DRIVER, EMPTY, MIX_MODE, RM,
                                    get_or_create_empty, mech, ops,
                                    refresh_child_of_matrices, register, ui,
                                    unregister,)
+from appablend.textures import (TEXTURES_OT_TextureToMesh,
+                                TEXTURES_PT_Textures,
+                                TEXTURES_VIEW_3D_PT_UI_Tool_TextureToMesh, ops,
+                                scratch, ui,)
 from appablend.timeline import (TIMELINE_DOPESHEET_EDITOR_PT_UI_Timeline,
                                 TIMELINE_NLA_EDITOR_PT_UI_Tool_Timeline,
                                 TIMELINE_OP, TIMELINE_OP_SCENE,
@@ -583,6 +588,8 @@ __all__ = ['ACTORS', 'ACT_BAKE', 'ACT_Multiple_Action_Op',
            'ResetLayerKeyframes', 'RootMotionMetadata', 'SPACE',
            'ST_FloatProperty', 'ST_FloatVectorProperty', 'ST_IntProperty',
            'ST_StringProperty', 'TARGETS', 'TARGET_ENUM', 'TARGET_ENUM_DEF',
+           'TEXTURES_OT_TextureToMesh', 'TEXTURES_PT_Textures',
+           'TEXTURES_VIEW_3D_PT_UI_Tool_TextureToMesh',
            'TIMELINE_DOPESHEET_EDITOR_PT_UI_Timeline',
            'TIMELINE_NLA_EDITOR_PT_UI_Tool_Timeline', 'TIMELINE_OP',
            'TIMELINE_OP_SCENE', 'TIMELINE_OT_clamp_end_to_current',
@@ -754,13 +761,13 @@ __all__ = ['ACTORS', 'ACT_BAKE', 'ACT_Multiple_Action_Op',
            'reset_pose_bone_rotation', 'reset_pose_bone_transform',
            'retargeting', 'reverse_enumerate', 'reverse_index', 'rew_timeline',
            'rigify', 'root_motion', 'sample_fcurve', 'scale', 'scene',
-           'scene_update_callback', 'select_all_frames', 'select_by_name',
-           'select_by_names', 'select_hierarchy', 'select_keyframed_bones',
-           'select_layer_bones', 'seperators', 'set_active_object',
-           'set_bone_layer', 'set_bone_parenting', 'set_cursor_from_matrix',
-           'set_edit_bone_matrix', 'set_edit_bone_matrix_by_object',
-           'set_edit_bone_matrix_world', 'set_local_head_tail',
-           'set_local_tail', 'set_object_active',
+           'scene_update_callback', 'scratch', 'select_all_frames',
+           'select_by_name', 'select_by_names', 'select_hierarchy',
+           'select_keyframed_bones', 'select_layer_bones', 'seperators',
+           'set_active_object', 'set_bone_layer', 'set_bone_parenting',
+           'set_cursor_from_matrix', 'set_edit_bone_matrix',
+           'set_edit_bone_matrix_by_object', 'set_edit_bone_matrix_world',
+           'set_local_head_tail', 'set_local_tail', 'set_object_active',
            'set_pose_bone_matrix_object', 'set_pose_bone_matrix_world',
            'set_world_head_tail', 'set_world_head_tail_xaxis',
            'set_world_tail', 'setup_new_layer', 'shift_bones',
@@ -776,17 +783,18 @@ __all__ = ['ACTORS', 'ACT_BAKE', 'ACT_Multiple_Action_Op',
            'sync_names', 'sync_particle_settings_names',
            'sync_with_action_mode', 'sync_with_action_mode_clip',
            'sync_with_clip', 'sync_with_scene_mode',
-           'sync_with_scene_mode_clip', 'timeline', 'to_pose_position',
-           'to_rest_position', 'tokens_end', 'tokens_mid', 'tokens_mid2',
-           'tokens_start', 'traceback_template', 'track_update_callback',
-           'traverse_collections_and_replace', 'turn_animlayers_on', 'ui',
-           'ul', 'unique_name', 'units', 'unity', 'unlock_edit_keyframes',
-           'unmute_modifiers', 'unregister', 'unselect_hierarchy',
-           'update_action', 'update_clip_index', 'update_clip_index_scene',
-           'update_rotations_to_quat', 'update_sub_track', 'update_track_list',
-           'use_animated_influence', 'utils', 'valid_bone_names',
-           'valid_data_paths', 'valid_pose_bone_paths', 'vec_roll_to_mat3',
-           'view_all_keyframes', 'visible_layers']
+           'sync_with_scene_mode_clip', 'textures', 'timeline',
+           'to_pose_position', 'to_rest_position', 'tokens_end', 'tokens_mid',
+           'tokens_mid2', 'tokens_start', 'traceback_template',
+           'track_update_callback', 'traverse_collections_and_replace',
+           'turn_animlayers_on', 'ui', 'ul', 'unique_name', 'units', 'unity',
+           'unlock_edit_keyframes', 'unmute_modifiers', 'unregister',
+           'unselect_hierarchy', 'update_action', 'update_clip_index',
+           'update_clip_index_scene', 'update_rotations_to_quat',
+           'update_sub_track', 'update_track_list', 'use_animated_influence',
+           'utils', 'valid_bone_names', 'valid_data_paths',
+           'valid_pose_bone_paths', 'vec_roll_to_mat3', 'view_all_keyframes',
+           'visible_layers']
 # </AUTOGEN_INIT>
 
 from . import _auto_load
